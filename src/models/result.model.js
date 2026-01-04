@@ -22,10 +22,16 @@ const resultSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  order: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
+
+resultSchema.index({ year: 1, order: 1 });
 
 module.exports = mongoose.model('Result', resultSchema);

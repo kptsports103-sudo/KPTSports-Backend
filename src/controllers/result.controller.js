@@ -2,7 +2,14 @@ const Result = require('../models/result.model');
 
 exports.getResults = async (req, res) => {
   try {
-    const results = await Result.find().sort({ year: -1 });
+    const { year, medal, search } = req.query;
+
+    const query = {};
+    if (year && year !== 'all') query.year = Number(year);
+    if (medal && medal !== 'all') query.medal = medal;
+    if (search) query.name = new RegExp(search, 'i');
+
+    const results = await Result.find(query).sort({ order: 1 });
     res.json(results);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -11,14 +18,14 @@ exports.getResults = async (req, res) => {
 
 exports.createResult = async (req, res) => {
   try {
-    const { name, event, year, medal, imageUrl } = req.body;
+    const { name, event, year, medal } = req.body;
 
     const result = new Result({
       name,
       event,
       year,
       medal,
-      imageUrl,
+      imageUrl: req.file ? `/uploads/results/${req.file.filename}` : '',
     });
 
     await result.save();
@@ -31,9 +38,14 @@ exports.createResult = async (req, res) => {
 
 exports.updateResult = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.imageUrl = `/uploads/results/${req.file.filename}`;
+    }
+
     const result = await Result.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -57,6 +69,25 @@ exports.deleteResult = async (req, res) => {
 
     res.json({ message: 'Result deleted' });
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.reorderResults = async (req, res) => {
+  try {
+    const { year, order } = req.body;
+
+    const bulk = order.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id, year },
+        update: { order: index }
+      }
+    }));
+
+    await Result.bulkWrite(bulk);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Reorder error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
