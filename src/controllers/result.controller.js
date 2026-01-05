@@ -18,14 +18,16 @@ exports.getResults = async (req, res) => {
 
 exports.createResult = async (req, res) => {
   try {
-    const { name, event, year, medal } = req.body;
+    const { name, event, year, medal, imageUrl } = req.body;
+
+    const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
 
     const result = new Result({
       name,
       event,
       year,
       medal,
-      imageUrl: req.file ? `/uploads/results/${req.file.filename}` : '',
+      imageUrl: normalizedImageUrl,
     });
 
     await result.save();
@@ -41,6 +43,8 @@ exports.updateResult = async (req, res) => {
     const updateData = { ...req.body };
     if (req.file) {
       updateData.imageUrl = `/uploads/results/${req.file.filename}`;
+    } else if (updateData.imageUrl === '' || !updateData.imageUrl?.trim()) {
+      updateData.imageUrl = null;
     }
 
     const result = await Result.findByIdAndUpdate(

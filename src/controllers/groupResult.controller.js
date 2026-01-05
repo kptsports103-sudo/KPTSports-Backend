@@ -11,7 +11,11 @@ const getGroupResults = async (req, res) => {
 
 const createGroupResult = async (req, res) => {
   try {
-    const groupResult = new GroupResult(req.body);
+    const data = { ...req.body };
+    if (data.imageUrl === '' || !data.imageUrl?.trim()) {
+      data.imageUrl = null;
+    }
+    const groupResult = new GroupResult(data);
     await groupResult.save();
     res.status(201).json(groupResult);
   } catch (error) {
@@ -21,9 +25,14 @@ const createGroupResult = async (req, res) => {
 
 const updateGroupResult = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    if (updateData.imageUrl === '' || !updateData.imageUrl?.trim()) {
+      updateData.imageUrl = null;
+    }
+
     const groupResult = await GroupResult.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 
