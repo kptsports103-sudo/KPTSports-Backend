@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const pageRoutes = require('./routes/pages');
 const eventRoutes = require('./routes/events');
+const homeRoutes = require('./routes/home.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -40,6 +41,7 @@ app.get('/healthz', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/pages', pageRoutes);
 app.use('/api/v1/events', eventRoutes);
+app.use('/api/v1/home', homeRoutes);
 
 // Error handler
 app.use(errorHandler);
