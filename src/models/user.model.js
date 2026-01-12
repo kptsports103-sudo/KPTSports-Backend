@@ -4,10 +4,17 @@ const userSchema = new mongoose.Schema({
   clerkUserId: {
     type: String,
   },
+  name: {
+    type: String,
+    required: true,
+  },
   email: {
     type: String,
     required: true,
     lowercase: true,
+  },
+  phone: {
+    type: String,
   },
   password: {
     type: String,
@@ -15,7 +22,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'student', 'coach'],
+    enum: ['admin', 'student', 'coach', 'Super Admin', 'Creator'],
     required: true,
   },
   otp: {

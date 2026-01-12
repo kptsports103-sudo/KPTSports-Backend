@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const authRoutes = require('./routes/auth.routes');
+const iamRoutes = require('./routes/iam.routes');
 const homeRoutes = require('./routes/home.routes');
 const meRoutes = require('./routes/me.routes');
 const eventRoutes = require('./routes/event.routes');
@@ -98,7 +99,10 @@ app.put('/api/history', authMiddleware, async (req, res) => {
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174'], // Allow frontend origins
+  credentials: true
+}));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
@@ -115,6 +119,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/iam', iamRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/events', eventRoutes);
