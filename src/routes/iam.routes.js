@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, getUsers, verifyOTP, resendOTP, deleteUser } = require('../controllers/iam.controller');
+const { createUser, getUsers, verifyOTP, resendOTP, deleteUser, createToken, resolveToken, sendOTPOnboarding, verifyOTPOnboarding, createUserOnboarding } = require('../controllers/iam.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
@@ -19,5 +19,22 @@ router.post('/verify-otp', authMiddleware, roleMiddleware(['admin', 'Super Admin
 
 // POST /api/iam/resend-otp - Resend OTP to user
 router.post('/resend-otp', authMiddleware, roleMiddleware(['admin', 'Super Admin']), resendOTP);
+
+// === TOKEN-BASED ONBOARDING SYSTEM ===
+
+// POST /api/iam/create-token - Create invite token (admin only)
+router.post('/create-token', authMiddleware, roleMiddleware(['admin', 'Super Admin']), createToken);
+
+// GET /api/iam/resolve-token - Resolve token to get phone/role (public)
+router.get('/resolve-token', resolveToken);
+
+// POST /api/iam/send-otp - Send OTP for onboarding (public)
+router.post('/send-otp', sendOTPOnboarding);
+
+// POST /api/iam/verify-otp - Verify OTP for onboarding (public)
+router.post('/verify-otp-onboarding', verifyOTPOnboarding);
+
+// POST /api/iam/create-user - Create user from onboarding (public)
+router.post('/create-user', createUserOnboarding);
 
 module.exports = router;
