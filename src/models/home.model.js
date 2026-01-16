@@ -6,17 +6,13 @@ const homeSchema = new mongoose.Schema({
     default: ''
   },
   banners: [{
-    image: {
+    video: {
       type: String,
-      required: true
+      default: ''
     },
     year: {
       type: Number,
-      required: false
-    },
-    fixed: {
-      type: Boolean,
-      default: false
+      default: 0
     }
   }],
   highlights: [{
@@ -46,10 +42,20 @@ const homeSchema = new mongoose.Schema({
     default: ''
   },
   // About page specific fields
-  bannerVideo: {
-    type: String,
-    default: ''
-  },
+  bannerImages: [{
+    image: {
+      type: String,
+      default: ''
+    },
+    year: {
+      type: Number,
+      default: 0
+    },
+    fixed: {
+      type: Boolean,
+      default: false
+    }
+  }],
   boxes: [{
     type: String
   }],

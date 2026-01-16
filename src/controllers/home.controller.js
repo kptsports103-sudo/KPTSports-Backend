@@ -41,7 +41,7 @@ exports.getHome = async (req, res) => {
 
 exports.updateHome = async (req, res) => {
   try {
-    const { welcomeText, banners, highlights, about, history, bannerVideo, boxes, bigHeader, bigText } = req.body;
+    const { welcomeText, banners, highlights, about, history, bannerImages, boxes, bigHeader, bigText } = req.body;
     console.log('Received update data:', req.body);
     let home = await Home.findOne();
     if (!home) {
@@ -73,7 +73,7 @@ exports.updateHome = async (req, res) => {
     if (about !== undefined) home.about = about;
     if (history !== undefined) home.history = history;
     // Update About page fields
-    if (bannerVideo !== undefined) home.bannerVideo = bannerVideo;
+    if (bannerImages !== undefined) home.bannerImages = bannerImages;
     if (boxes !== undefined) home.boxes = boxes;
     if (bigHeader !== undefined) home.bigHeader = bigHeader;
     if (bigText !== undefined) home.bigText = bigText;
