@@ -15,7 +15,7 @@ const loginUser = async (email, password, role) => {
       }
       // Create new user for coach/student (if added back)
       const hashedPassword = await bcrypt.hash(password, 10);
-      user = new User({ email: email.toLowerCase(), password: hashedPassword, role, clerkUserId: email.toLowerCase() });
+      user = new User({ name: email.toLowerCase(), email: email.toLowerCase(), password: hashedPassword, role, clerkUserId: email.toLowerCase() });
       await user.save();
     } else {
       // Check password

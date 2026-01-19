@@ -10,10 +10,12 @@ async function seedAdmin() {
     let admin = await User.findOne({ email: 'yashawanthareddyd@gmail.com', role: 'admin' });
     if (admin) {
       admin.password = hashedPassword;
+      if (!admin.name) admin.name = 'Admin User';
       await admin.save();
       console.log('Admin user password updated successfully');
     } else {
       admin = new User({
+        name: 'Admin User',
         email: 'yashawanthareddyd@gmail.com',
         password: hashedPassword,
         role: 'admin',

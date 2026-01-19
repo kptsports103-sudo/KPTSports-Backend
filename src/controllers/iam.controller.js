@@ -301,7 +301,7 @@ exports.verifyOTPOnboarding = async (req, res) => {
 };
 
 exports.createUserOnboarding = async (req, res) => {
-  const { name, phone, email, password, role, token } = req.body;
+  const { name, phone, email, password, role, token, profileImage } = req.body;
 
   console.log('Create user request:', { name, phone, email, role, hasToken: !!token });
 
@@ -355,6 +355,7 @@ exports.createUserOnboarding = async (req, res) => {
       phone,
       password: hashedPassword,
       role: userRole,
+      profileImage: profileImage || null,
       is_verified: true,
       createdAt: new Date()
     });
