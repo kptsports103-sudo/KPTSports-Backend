@@ -35,6 +35,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  profileImage: {
+    type: String, // base64 encoded image or URL
+  },
   createdAt: {
     type: Date,
     default: Date.now,

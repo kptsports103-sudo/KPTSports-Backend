@@ -6,24 +6,24 @@ const roleMiddleware = require('../middlewares/role.middleware');
 const router = express.Router();
 
 // GET /api/iam/users - Get all users (admin only)
-router.get('/users', authMiddleware, roleMiddleware(['admin', 'Super Admin']), getUsers);
+router.get('/users', authMiddleware, roleMiddleware(['admin', 'superadmin']), getUsers);
 
 // POST /api/iam/users - Create new user (admin only)
-router.post('/users', authMiddleware, roleMiddleware(['admin', 'Super Admin']), createUser);
+router.post('/users', authMiddleware, roleMiddleware(['admin', 'superadmin']), createUser);
 
 // DELETE /api/iam/users/:userId - Delete user (admin only)
-router.delete('/users/:userId', authMiddleware, roleMiddleware(['admin', 'Super Admin']), deleteUser);
+router.delete('/users/:userId', authMiddleware, roleMiddleware(['admin', 'superadmin']), deleteUser);
 
 // POST /api/iam/verify-otp - Verify OTP for user activation
-router.post('/verify-otp', authMiddleware, roleMiddleware(['admin', 'Super Admin']), verifyOTP);
+router.post('/verify-otp', authMiddleware, roleMiddleware(['admin', 'superadmin']), verifyOTP);
 
 // POST /api/iam/resend-otp - Resend OTP to user
-router.post('/resend-otp', authMiddleware, roleMiddleware(['admin', 'Super Admin']), resendOTP);
+router.post('/resend-otp', authMiddleware, roleMiddleware(['admin', 'superadmin']), resendOTP);
 
 // === TOKEN-BASED ONBOARDING SYSTEM ===
 
 // POST /api/iam/create-token - Create invite token (admin only)
-router.post('/create-token', authMiddleware, roleMiddleware(['admin', 'Super Admin']), createToken);
+router.post('/create-token', authMiddleware, roleMiddleware(['admin', 'superadmin']), createToken);
 
 // GET /api/iam/resolve-token - Resolve token to get phone/role (public)
 router.get('/resolve-token', resolveToken);

@@ -41,6 +41,8 @@ const loginUser = async (email, password, role) => {
           id: user._id,
           email: user.email,
           role: user.role,
+          name: user.name,
+          profileImage: user.profileImage,
         },
       };
     }
@@ -52,7 +54,7 @@ const loginUser = async (email, password, role) => {
 async function generateOTPForUser(user, email) {
   const otp = otpService.generateOTP();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-  await User.findOneAndUpdate({ email: email.toLowerCase() }, { otp, otp_expires_at: expiresAt });
+  await User.findOneAndUpdate({ _id: user._id }, { otp, otp_expires_at: expiresAt });
   // Send OTP via email
   await emailService.sendOTP(email, otp);
 }

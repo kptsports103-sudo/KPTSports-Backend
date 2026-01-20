@@ -2,6 +2,7 @@ const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const otpService = require('../services/otp.service');
 const emailService = require('../services/email.service');
+const cloudinary = require('../config/cloudinary');
 const { v4: uuid } = require('uuid');
 
 // In-memory token store for onboarding (in production, use database)
@@ -348,6 +349,33 @@ exports.createUserOnboarding = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Upload profile image to Cloudinary if provided
+    let profileImageUrl = null;
+    if (profileImage) {
+      try {
+        console.log('Uploading profile image to Cloudinary...');
+        const uploadResult = await cloudinary.uploader.upload(profileImage, {
+          folder: 'user-profiles',
+          public_id: `user-${email}-${Date.now()}`,
+          transformation: [
+            { width: 200, height: 200, crop: 'fill' },
+            { quality: 'auto' }
+          ]
+        });
+        profileImageUrl = uploadResult.secure_url;
+        console.log('✅ Profile image uploaded to Cloudinary:', profileImageUrl);
+      } catch (uploadError) {
+        console.error('❌ Cloudinary upload error:', uploadError.message);
+        console.error('Full error:', uploadError);
+        // Return error instead of continuing without image
+        return res.status(500).json({
+          message: `Profile image upload failed: ${uploadError.message}. Please check Cloudinary configuration.`
+        });
+      }
+    } else {
+      console.log('No profile image provided');
+    }
+
     // Create new user
     const newUser = new User({
       name,
@@ -355,7 +383,7 @@ exports.createUserOnboarding = async (req, res) => {
       phone,
       password: hashedPassword,
       role: userRole,
-      profileImage: profileImage || null,
+      profileImage: profileImageUrl,
       is_verified: true,
       createdAt: new Date()
     });

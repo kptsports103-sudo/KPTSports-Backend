@@ -6,7 +6,24 @@ const User = require('./src/models/user.model');
 async function seedAdmin() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    const hashedPassword = await bcrypt.hash('corxtgoinlrixaam', 10);
+    const hashedPassword = await bcrypt.hash('@SuperAdmin#KPT!103$', 10);
+
+    // Delete any existing users with this email first
+    await User.deleteMany({ email: 'yashawanthareddyd@gmail.com' });
+    console.log('Deleted existing users with email yashawanthareddyd@gmail.com');
+
+    // Create Super Admin
+    const superAdmin = new User({
+      name: 'Super Admin User',
+      email: 'yashawanthareddyd@gmail.com',
+      password: hashedPassword,
+      role: 'superadmin',
+      clerkUserId: 'yashawanthareddyd@gmail.com'
+    });
+    await superAdmin.save();
+    console.log('Super Admin user created successfully');
+
+    // Also create/update regular Admin
     let admin = await User.findOne({ email: 'yashawanthareddyd@gmail.com', role: 'admin' });
     if (admin) {
       admin.password = hashedPassword;
