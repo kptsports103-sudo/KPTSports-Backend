@@ -6,30 +6,60 @@ const emailService = require('./services/email.service');
 const { validateRole } = require('./auth.validation');
 
 const loginUser = async (email, password, role) => {
-  validateRole(role);
+  const requestId = Math.random().toString(36).substr(2, 9);
   try {
-    let user = await User.findOne({ email: email.toLowerCase(), role });
-    if (!user) {
-      if (['superadmin', 'admin', 'creator'].includes(role)) {
-        throw new Error('User not found. Please contact administrator.');
-      }
-      // Create new user for coach/student (if added back)
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user = new User({ name: email.toLowerCase(), email: email.toLowerCase(), password: hashedPassword, role, clerkUserId: email.toLowerCase() });
-      await user.save();
-    } else {
-      // Check password
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        throw new Error('Invalid credentials');
-      }
+    console.log('=== LOGIN ATTEMPT ===', requestId);
+    console.log('Request ID:', requestId);
+    console.log('Email:', email.toLowerCase());
+    console.log('Requested role:', role);
+    console.log('Password provided:', !!password);
+    console.log('Password length:', password ? password.length : 'N/A');
+    console.log('Password chars:', password ? password.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
+    
+    let user = await User.findOne({ email: email.toLowerCase(), role: role });
+    console.log('User found:', !!user);
+    if (user) {
+      console.log('User role from DB:', user.role);
+      console.log('User ID:', user._id);
     }
-    if (['superadmin', 'admin', 'creator'].includes(role)) {
+    if (!user) {
+      console.log('ERROR: User not found with email and role combination');
+      throw new Error('User not found');
+    }
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match result:', isMatch);
+    if (!isMatch) {
+      console.log('ERROR: Password does not match');
+      throw new Error('Invalid credentials');
+    }
+    // Validate that user role matches requested role
+    if (user.role !== role) {
+      console.log('ERROR: Role mismatch - DB role:', user.role, 'Requested role:', role);
+      throw new Error(`Invalid role. User role is ${user.role}, but ${role} was requested.`);
+    }
+    if (user.role === 'creator') {
+      // Direct login for creator
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+      return {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          profileImage: user.profileImage,
+        },
+      };
+    } else if (['superadmin', 'admin'].includes(user.role)) {
       await generateOTPForUser(user, email);
       return { message: 'OTP sent to your email' };
     } else {
-      // For coach and student, no OTP
-      // Generate JWT directly
+      // Direct login for other roles like coach
       const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET,
@@ -52,11 +82,18 @@ const loginUser = async (email, password, role) => {
 };
 
 async function generateOTPForUser(user, email) {
-  const otp = otpService.generateOTP();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-  await User.findOneAndUpdate({ _id: user._id }, { otp, otp_expires_at: expiresAt });
-  // Send OTP via email
-  await emailService.sendOTP(email, otp);
+  try {
+    const otp = otpService.generateOTP();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    await User.findOneAndUpdate({ _id: user._id }, { otp, otp_expires_at: expiresAt });
+    console.log(`OTP for ${email}: ${otp}`);
+    // Send OTP via email
+    await emailService.sendOTP(email, otp);
+    console.log('Email sent successfully');
+  } catch (error) {
+    console.error('Error in generateOTPForUser:', error);
+    throw new Error('Failed to generate and send OTP: ' + error.message);
+  }
 }
 
 const verifyUserOTP = async (email, otp) => {
@@ -79,6 +116,8 @@ const verifyUserOTP = async (email, otp) => {
         id: user._id,
         email: user.email,
         role: user.role,
+        name: user.name,
+        profileImage: user.profileImage,
       },
     };
   } catch (error) {

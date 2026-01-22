@@ -5,21 +5,36 @@ const jwt = require('jsonwebtoken');
 
 exports.login = async (req, res) => {
   const { email, password, role } = req.body;
-  console.log('Login attempt:', { email, role });
+  console.log('=== CONTROLLER LOGIN ===');
+  console.log('Request body:', req.body);
+  console.log('Email:', email);
+  console.log('Password provided:', !!password);
+  console.log('Role:', role);
+  console.log('Content-Type:', req.get('Content-Type'));
+  
   try {
     const result = await loginUser(email, password, role);
     console.log('Login result:', result);
     res.json(result);
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('=== LOGIN ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(400).json({ message: error.message || 'Server error' });
   }
 };
 
 exports.verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
+  console.log('=== CONTROLLER VERIFY OTP ===');
+  console.log('Request body:', req.body);
+  console.log('Email:', email);
+  console.log('OTP:', otp);
+  console.log('Content-Type:', req.get('Content-Type'));
+  
   try {
     const result = await verifyUserOTP(email, otp);
+    console.log('Verify OTP result:', result);
     res.json(result);
   } catch (error) {
     console.error(error);

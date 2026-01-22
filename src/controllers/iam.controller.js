@@ -406,6 +406,7 @@ exports.createUserOnboarding = async (req, res) => {
         email: newUser.email,
         phone: newUser.phone,
         role: newUser.role,
+        profileImage: newUser.profileImage,
         is_verified: true
       }
     });
