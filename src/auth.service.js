@@ -16,7 +16,7 @@ const loginUser = async (email, password, role) => {
     console.log('Password length:', password ? password.length : 'N/A');
     console.log('Password chars:', password ? password.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
     
-    let user = await User.findOne({ email: email.toLowerCase(), role: role });
+    let user = await User.findOne({ email: email.toLowerCase(), role: new RegExp('^' + role + '$', 'i') });
     console.log('User found:', !!user);
     if (user) {
       console.log('User role from DB:', user.role);
@@ -33,29 +33,12 @@ const loginUser = async (email, password, role) => {
       console.log('ERROR: Password does not match');
       throw new Error('Invalid credentials');
     }
-    // Validate that user role matches requested role
-    if (user.role !== role) {
+    // Validate that user role matches requested role (case insensitive)
+    if (user.role.toLowerCase() !== role.toLowerCase()) {
       console.log('ERROR: Role mismatch - DB role:', user.role, 'Requested role:', role);
       throw new Error(`Invalid role. User role is ${user.role}, but ${role} was requested.`);
     }
-    if (user.role === 'creator') {
-      // Direct login for creator
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-      return {
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          name: user.name,
-          profileImage: user.profileImage,
-        },
-      };
-    } else if (['superadmin', 'admin'].includes(user.role)) {
+    if (['superadmin', 'admin', 'creator'].includes(user.role)) {
       await generateOTPForUser(user, email);
       return { message: 'OTP sent to your email' };
     } else {

@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, getUsers, verifyOTP, resendOTP, deleteUser, createToken, resolveToken, sendOTPOnboarding, verifyOTPOnboarding, createUserOnboarding } = require('../controllers/iam.controller');
+const { createUser, getUsers, verifyOTP, resendOTP, deleteUser, createToken, resolveToken, sendOTPOnboarding, verifyOTPOnboarding, createUserOnboarding, verifyPhoneOTP } = require('../controllers/iam.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
@@ -36,5 +36,11 @@ router.post('/verify-otp-onboarding', verifyOTPOnboarding);
 
 // POST /api/iam/create-user - Create user from onboarding (public)
 router.post('/create-user', createUserOnboarding);
+
+// POST /api/iam/verify-phone-otp - Verify phone OTP for onboarding (public)
+router.post('/verify-phone-otp', verifyPhoneOTP);
+
+// POST /api/iam/verify-phone-otp - Verify phone OTP for onboarding (public)
+router.post('/verify-phone-otp', verifyPhoneOTP);
 
 module.exports = router;

@@ -2,8 +2,10 @@ const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const otpService = require('../services/otp.service');
 const emailService = require('../services/email.service');
+const smsService = require('../services/sms.service');
 const cloudinary = require('../config/cloudinary');
 const { v4: uuid } = require('uuid');
+const jwt = require('jsonwebtoken');
 
 // In-memory token store for onboarding (in production, use database)
 const onboardingTokens = {};
@@ -301,6 +303,142 @@ exports.verifyOTPOnboarding = async (req, res) => {
   }
 };
 
+exports.verifyPhoneOTP = async (req, res) => {
+  const { userId, otp } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.is_verified) {
+      return res.status(400).json({ message: 'User is already verified' });
+    }
+
+    if (!user.otp || !user.otp_expires_at) {
+      return res.status(400).json({ message: 'No OTP found for this user' });
+    }
+
+    if (new Date() > user.otp_expires_at) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Verify the user
+    await User.findByIdAndUpdate(userId, {
+      is_verified: true,
+      otp: null,
+      otp_expires_at: null,
+    });
+
+    res.json({
+      message: 'Phone number verified successfully. Account is now active.',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        is_verified: true,
+      }
+    });
+  } catch (error) {
+    console.error('Phone OTP verification error:', error);
+    res.status(400).json({ message: error.message || 'Failed to verify OTP' });
+  }
+};
+
+exports.verifyPhoneOTP = async (req, res) => {
+  const { userId, otp } = req.body;
+
+  console.log('=== PHONE OTP VERIFICATION BACKEND DEBUG ===');
+  console.log('Request body:', { userId, otp });
+
+  try {
+    const user = await User.findById(userId);
+    console.log('Found user:', user ? 'YES' : 'NO');
+    if (user) {
+      console.log('User details:', { id: user._id, email: user.email, role: user.role, is_verified: user.is_verified });
+    }
+    
+    if (!user) {
+      console.log('ERROR: User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.is_verified) {
+      console.log('ERROR: User already verified');
+      return res.status(400).json({ message: 'User is already verified' });
+    }
+
+    if (!user.otp || !user.otp_expires_at) {
+      console.log('ERROR: No OTP found');
+      return res.status(400).json({ message: 'No OTP found for this user' });
+    }
+
+    console.log('Stored OTP:', user.otp);
+    console.log('Provided OTP:', otp);
+    console.log('OTP expires at:', user.otp_expires_at);
+    console.log('Current time:', new Date());
+
+    if (new Date() > user.otp_expires_at) {
+      console.log('ERROR: OTP expired');
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    if (user.otp !== otp) {
+      console.log('ERROR: Invalid OTP');
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    console.log('OTP verification successful, updating user...');
+
+    // Verify the user and clear OTP
+    await User.findByIdAndUpdate(userId, {
+      is_verified: true,
+      otp: null,
+      otp_expires_at: null,
+    });
+
+    console.log('User updated successfully');
+
+    // Generate JWT token for auto-login
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    console.log('JWT token generated');
+
+    const responseData = {
+      message: 'Phone number verified successfully. Account is now active.',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profileImage: user.profileImage,
+        is_verified: true,
+      }
+    };
+
+    console.log('Sending response:', responseData);
+
+    res.json(responseData);
+  } catch (error) {
+    console.error('=== PHONE OTP VERIFICATION ERROR ===');
+    console.error('Error:', error);
+    res.status(400).json({ message: error.message || 'Failed to verify OTP' });
+  }
+};
+
 exports.createUserOnboarding = async (req, res) => {
   const { name, phone, email, password, role, token, profileImage } = req.body;
 
@@ -325,10 +463,10 @@ exports.createUserOnboarding = async (req, res) => {
       console.log('Direct onboarding, using role:', role);
     }
 
-    // Validate mobile number format
+    // Validate mobile number format (Indian numbers starting with 6-9)
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number starting with 5-9' });
+      return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number starting with 6-9' });
     }
 
     // Check if user already exists (same email + role combination)
@@ -376,6 +514,9 @@ exports.createUserOnboarding = async (req, res) => {
       console.log('No profile image provided');
     }
 
+    // Require phone verification for all roles
+    const requiresPhoneVerification = true;
+
     // Create new user
     const newUser = new User({
       name,
@@ -384,11 +525,24 @@ exports.createUserOnboarding = async (req, res) => {
       password: hashedPassword,
       role: userRole,
       profileImage: profileImageUrl,
-      is_verified: true,
+      is_verified: !requiresPhoneVerification, // Verified for non-creator, unverified for creator
       createdAt: new Date()
     });
 
+    // Generate OTP for phone verification if required
+    if (requiresPhoneVerification) {
+      const otp = otpService.generateOTP();
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      newUser.otp = otp;
+      newUser.otp_expires_at = otpExpiresAt;
+    }
+
     await newUser.save();
+
+    // Send OTP via SMS if required
+    if (requiresPhoneVerification) {
+      await smsService.sendOTP(phone, newUser.otp);
+    }
 
     // Mark token as used if it was provided
     if (token) {
@@ -399,7 +553,9 @@ exports.createUserOnboarding = async (req, res) => {
     }
 
     res.json({
-      message: 'Account created successfully',
+      message: requiresPhoneVerification
+        ? 'Account created successfully. Please verify your phone number with the OTP sent to your mobile.'
+        : 'Account created and verified successfully',
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -407,8 +563,9 @@ exports.createUserOnboarding = async (req, res) => {
         phone: newUser.phone,
         role: newUser.role,
         profileImage: newUser.profileImage,
-        is_verified: true
-      }
+        is_verified: newUser.is_verified
+      },
+      requiresPhoneVerification
     });
   } catch (error) {
     console.error('Create user onboarding error:', error);
