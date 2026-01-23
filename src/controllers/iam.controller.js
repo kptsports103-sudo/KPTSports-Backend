@@ -4,7 +4,7 @@ const otpService = require('../services/otp.service');
 const emailService = require('../services/email.service');
 const smsService = require('../services/sms.service');
 const cloudinary = require('../config/cloudinary');
-const { v4: uuid } = require('uuid');
+import { v4 as uuid } from 'uuid';
 const jwt = require('jsonwebtoken');
 
 // In-memory token store for onboarding (in production, use database)
