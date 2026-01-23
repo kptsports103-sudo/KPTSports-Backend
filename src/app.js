@@ -100,7 +100,7 @@ app.put('/api/history', authMiddleware, async (req, res) => {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'], // Allow frontend origins
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://kpt-sports-frontend.vercel.app'], // Allow frontend origins
   credentials: true
 }));
 app.use(morgan('combined'));
