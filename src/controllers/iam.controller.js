@@ -1,17 +1,17 @@
-import User from '../models/user.model';
-import bcrypt from 'bcryptjs';
-import otpService from '../services/otp.service';
-import emailService from '../services/email.service';
-import smsService from '../services/sms.service';
-import cloudinary from '../config/cloudinary';
-import { randomUUID } from 'crypto';
-import jwt from 'jsonwebtoken';
+const User = require('../models/user.model');
+const bcrypt = require('bcryptjs');
+const otpService = require('../services/otp.service');
+const emailService = require('../services/email.service');
+const smsService = require('../services/sms.service');
+const cloudinary = require('../config/cloudinary');
+const { randomUUID } = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // In-memory token store for onboarding (in production, use database)
 const onboardingTokens = {};
 const onboardingOTPs = {};
 
-export const  getUsers = async (req, res) => {
+module.exports.getUsers = async (req, res) => {
   try {
     // Get all users from MongoDB
     const users = await User.find({}).select('-password -otp -otp_expires_at');
@@ -22,7 +22,7 @@ export const  getUsers = async (req, res) => {
   }
 };
 
-export const  createUser = async (req, res) => {
+const createUser = async (req, res) => {
   const { email, password, name, phone, role } = req.body;
 
   try {
@@ -81,7 +81,7 @@ export const  createUser = async (req, res) => {
   }
 };
 
-export const  verifyOTP = async (req, res) => {
+const verifyOTP = async (req, res) => {
   const { userId, otp } = req.body;
 
   try {
@@ -130,7 +130,7 @@ export const  verifyOTP = async (req, res) => {
   }
 };
 
-export const resendOTP = async (req, res) => {
+const resendOTP = async (req, res) => {
   const { userId } = req.body;
 
   try {
@@ -165,7 +165,7 @@ export const resendOTP = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {
+const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -189,7 +189,7 @@ export const deleteUser = async (req, res) => {
 
 // === TOKEN-BASED ONBOARDING SYSTEM ===
 
-export const createToken = async (req, res) => {
+const createToken = async (req, res) => {
   const { phone, role = "Creator", source = "admin" } = req.body;
 
   try {
@@ -217,7 +217,7 @@ export const createToken = async (req, res) => {
   }
 };
 
-export const resolveToken = async (req, res) => {
+const resolveToken = async (req, res) => {
   const { token } = req.query;
 
   try {
@@ -238,7 +238,7 @@ export const resolveToken = async (req, res) => {
   }
 };
 
-export const sendOTPOnboarding = async (req, res) => {
+const sendOTPOnboarding = async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -439,7 +439,7 @@ export const verifyPhoneOTPWithLogin = async (req, res) => {
   }
 };
 
-export const createUserOnboarding = async (req, res) => {
+const createUserOnboarding = async (req, res) => {
   const { name, phone, email, password, role, token, profileImage } = req.body;
 
   console.log('Create user request:', { name, phone, email, role, hasToken: !!token });
@@ -571,4 +571,17 @@ export const createUserOnboarding = async (req, res) => {
     console.error('Create user onboarding error:', error);
     res.status(500).json({ message: error.message || 'Failed to create account' });
   }
+};
+
+// Export all functions for CommonJS
+module.exports = {
+  getUsers,
+  createUser,
+  verifyOTP,
+  resendOTP,
+  deleteUser,
+  createToken,
+  resolveToken,
+  sendOTPOnboarding,
+  createUserOnboarding
 };
