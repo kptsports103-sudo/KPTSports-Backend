@@ -4,7 +4,7 @@ import otpService from '../services/otp.service';
 import emailService from '../services/email.service';
 import smsService from '../services/sms.service';
 import cloudinary from '../config/cloudinary';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 
 // In-memory token store for onboarding (in production, use database)
@@ -193,7 +193,7 @@ export const createToken = async (req, res) => {
   const { phone, role = "Creator", source = "admin" } = req.body;
 
   try {
-    const token = uuid();
+    const token = randomUUID();
     onboardingTokens[token] = {
       phone: phone || null,
       role,
