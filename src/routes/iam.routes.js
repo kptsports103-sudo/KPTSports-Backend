@@ -1,7 +1,7 @@
-const express = require('express');
-const { createUser, getUsers, verifyOTP, resendOTP, deleteUser, createToken, resolveToken, sendOTPOnboarding, verifyOTPOnboarding, createUserOnboarding, verifyPhoneOTP } = require('../controllers/iam.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
-const roleMiddleware = require('../middlewares/role.middleware');
+import express from 'express';
+import { createUser, getUsers, verifyOTP, resendOTP, deleteUser, createToken, resolveToken, sendOTPOnboarding, verifyOTPOnboarding, createUserOnboarding, verifyPhoneOTP, verifyPhoneOTPWithLogin } from '../controllers/iam.controller.js';
+import authMiddleware from '../middlewares/auth.middleware.js';
+import roleMiddleware from '../middlewares/role.middleware.js';
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ router.post('/create-user', createUserOnboarding);
 // POST /api/iam/verify-phone-otp - Verify phone OTP for onboarding (public)
 router.post('/verify-phone-otp', verifyPhoneOTP);
 
-// POST /api/iam/verify-phone-otp - Verify phone OTP for onboarding (public)
-router.post('/verify-phone-otp', verifyPhoneOTP);
+// POST /api/iam/verify-phone-otp-login - Verify phone OTP with login (public)
+router.post('/verify-phone-otp-login', verifyPhoneOTPWithLogin);
 
-module.exports = router;
+export default router;

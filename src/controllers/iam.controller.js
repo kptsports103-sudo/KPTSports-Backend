@@ -1,17 +1,17 @@
-const User = require('../models/user.model');
-const bcrypt = require('bcryptjs');
-const otpService = require('../services/otp.service');
-const emailService = require('../services/email.service');
-const smsService = require('../services/sms.service');
-const cloudinary = require('../config/cloudinary');
+import User from '../models/user.model';
+import bcrypt from 'bcryptjs';
+import otpService from '../services/otp.service';
+import emailService from '../services/email.service';
+import smsService from '../services/sms.service';
+import cloudinary from '../config/cloudinary';
 import { v4 as uuid } from 'uuid';
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 // In-memory token store for onboarding (in production, use database)
 const onboardingTokens = {};
 const onboardingOTPs = {};
 
-exports.getUsers = async (req, res) => {
+export const  getUsers = async (req, res) => {
   try {
     // Get all users from MongoDB
     const users = await User.find({}).select('-password -otp -otp_expires_at');
@@ -22,7 +22,7 @@ exports.getUsers = async (req, res) => {
   }
 };
 
-exports.createUser = async (req, res) => {
+export const  createUser = async (req, res) => {
   const { email, password, name, phone, role } = req.body;
 
   try {
@@ -81,7 +81,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
-exports.verifyOTP = async (req, res) => {
+export const  verifyOTP = async (req, res) => {
   const { userId, otp } = req.body;
 
   try {
@@ -130,7 +130,7 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
-exports.resendOTP = async (req, res) => {
+export const resendOTP = async (req, res) => {
   const { userId } = req.body;
 
   try {
@@ -165,7 +165,7 @@ exports.resendOTP = async (req, res) => {
   }
 };
 
-exports.deleteUser = async (req, res) => {
+export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -189,7 +189,7 @@ exports.deleteUser = async (req, res) => {
 
 // === TOKEN-BASED ONBOARDING SYSTEM ===
 
-exports.createToken = async (req, res) => {
+export const createToken = async (req, res) => {
   const { phone, role = "Creator", source = "admin" } = req.body;
 
   try {
@@ -217,7 +217,7 @@ exports.createToken = async (req, res) => {
   }
 };
 
-exports.resolveToken = async (req, res) => {
+export const resolveToken = async (req, res) => {
   const { token } = req.query;
 
   try {
@@ -238,7 +238,7 @@ exports.resolveToken = async (req, res) => {
   }
 };
 
-exports.sendOTPOnboarding = async (req, res) => {
+export const sendOTPOnboarding = async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -271,7 +271,7 @@ exports.sendOTPOnboarding = async (req, res) => {
   }
 };
 
-exports.verifyOTPOnboarding = async (req, res) => {
+export const verifyOTPOnboarding = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
@@ -303,7 +303,7 @@ exports.verifyOTPOnboarding = async (req, res) => {
   }
 };
 
-exports.verifyPhoneOTP = async (req, res) => {
+export const verifyPhoneOTP = async (req, res) => {
   const { userId, otp } = req.body;
 
   try {
@@ -352,7 +352,7 @@ exports.verifyPhoneOTP = async (req, res) => {
   }
 };
 
-exports.verifyPhoneOTP = async (req, res) => {
+export const verifyPhoneOTPWithLogin = async (req, res) => {
   const { userId, otp } = req.body;
 
   console.log('=== PHONE OTP VERIFICATION BACKEND DEBUG ===');
@@ -439,7 +439,7 @@ exports.verifyPhoneOTP = async (req, res) => {
   }
 };
 
-exports.createUserOnboarding = async (req, res) => {
+export const createUserOnboarding = async (req, res) => {
   const { name, phone, email, password, role, token, profileImage } = req.body;
 
   console.log('Create user request:', { name, phone, email, role, hasToken: !!token });
