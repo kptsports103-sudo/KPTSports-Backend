@@ -573,6 +573,12 @@ const createUserOnboarding = async (req, res) => {
   }
 };
 
+const getUsers = async (req, res) => {
+  return res.status(501).json({
+    message: 'getUsers not implemented yet',
+  });
+};
+
 // Export all functions for CommonJS
 module.exports = {
   getUsers,
