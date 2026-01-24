@@ -45,18 +45,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Database readiness guard middleware
-app.use((req, res, next) => {
-  if (!dbReady) {
-    return res.status(503).json({
-      error: 'SERVICE_UNAVAILABLE',
-      message: 'Database initializing, please retry shortly',
-      retryAfter: 5
-    });
-  }
-  next();
-});
-
 app.use(
   cors({
     origin: [
@@ -68,19 +56,35 @@ app.use(
 );
 
 /* ---------------- Health ------------- */
+// Always fast, never blocked by DB
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'KPT Sports Backend API running 🚀' });
+});
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    db: dbReady ? 'connected' : 'initializing'
+  });
+});
+
 // Suppress favicon 404s
 app.get('/favicon.ico', (_, res) => res.status(204).end());
 app.get('/favicon.png', (_, res) => res.status(204).end());
 
-app.get('/', (req, res) => {
-  res.json({ message: 'KPT Sports Backend API running 🚀' });
+/* -------------- API Routes with DB Guard ----------- */
+// Database readiness guard ONLY for API routes
+app.use('/api', (req, res, next) => {
+  if (!dbReady) {
+    return res.status(503).json({
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Database initializing, please retry shortly',
+      retryAfter: 5
+    });
+  }
+  next();
 });
 
-app.get('/healthz', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-/* -------------- API Routes ----------- */
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/iam', iamRoutes);
 app.use('/api/v1/home', homeRoutes);
