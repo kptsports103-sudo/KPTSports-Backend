@@ -271,7 +271,7 @@ const sendOTPOnboarding = async (req, res) => {
   }
 };
 
-export const verifyOTPOnboarding = async (req, res) => {
+const verifyOTPOnboarding = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
@@ -303,7 +303,7 @@ export const verifyOTPOnboarding = async (req, res) => {
   }
 };
 
-export const verifyPhoneOTP = async (req, res) => {
+const verifyPhoneOTP = async (req, res) => {
   const { userId, otp } = req.body;
 
   try {
@@ -352,7 +352,7 @@ export const verifyPhoneOTP = async (req, res) => {
   }
 };
 
-export const verifyPhoneOTPWithLogin = async (req, res) => {
+const verifyPhoneOTPWithLogin = async (req, res) => {
   const { userId, otp } = req.body;
 
   console.log('=== PHONE OTP VERIFICATION BACKEND DEBUG ===');
@@ -574,9 +574,9 @@ const createUserOnboarding = async (req, res) => {
 };
 
 const getUsers = async (req, res) => {
-  return res.status(501).json({
-    message: 'getUsers not implemented yet',
-  });
+return res.status(501).json({
+  message: 'getUsers not implemented yet',
+});
 };
 
 // Export all functions for CommonJS
@@ -589,5 +589,8 @@ module.exports = {
   createToken,
   resolveToken,
   sendOTPOnboarding,
-  createUserOnboarding
+  verifyOTPOnboarding,
+  createUserOnboarding,
+  verifyPhoneOTP,
+  verifyPhoneOTPWithLogin
 };
