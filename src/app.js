@@ -49,7 +49,8 @@ app.get('/', (req, res) => {
 app.get('/healthz', (req, res) => {
   res.status(200).json({
     status: 'ok',
-    db: 'checking'
+    db: 'connected',
+    timestamp: new Date().toISOString()
   });
 });
 
