@@ -8,7 +8,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const pageRoutes = require('./routes/pages');
 const eventRoutes = require('./routes/events');
-const homeRoutes = require('./routes/home.routes');
+const homeRoutes = require('./src/routes/home.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -23,10 +23,34 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+      'http://localhost:5173',
+      'https://kpt-sports.vercel.app',
+      'https://kpt-sports-backend.vercel.app'
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+
+// Handle preflight requests
+app.options('*', cors());
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'KPT Sports Backend API is running 🚀',
+    version: 'v1',
+    endpoints: {
+      health: '/healthz',
+      auth: '/api/v1/auth',
+      pages: '/api/v1/pages',
+      events: '/api/v1/events',
+      home: '/api/v1/home'
+    }
+  });
+});
 
 // Test route
 app.get('/healthz', (req, res) => {
