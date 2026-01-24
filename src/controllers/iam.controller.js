@@ -586,6 +586,5 @@ module.exports = {
   verifyOTPOnboarding,
   createUserOnboarding,
   verifyPhoneOTP,
-  verifyPhoneOTPWithLogin,
-  createAdminUser
+  verifyPhoneOTPWithLogin
 };

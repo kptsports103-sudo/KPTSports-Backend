@@ -6,7 +6,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 
-const connectMongoDB = require('./config/mongodb');
+const { connectMongoDB } = require('./config/mongodb');
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
