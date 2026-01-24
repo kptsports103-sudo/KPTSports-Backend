@@ -27,6 +27,10 @@ const createUser = async (req, res) => {
   const { email, password, name, phone, role } = req.body;
 
   try {
+    // Normalize role to valid enum values
+    const normalizedRole = normalizeRole(role);
+    console.log('CreateUser: Role normalized from', role, 'to', normalizedRole);
+
     // Validate mobile number format (basic validation for Indian numbers)
     const phoneRegex = /^[5-9]\d{9}$/;
     if (!phoneRegex.test(phone)) {
@@ -34,9 +38,9 @@ const createUser = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: email.toLowerCase(), role: normalizedRole });
     if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+      return res.status(400).json({ message: 'User with this email and role already exists' });
     }
 
     // Removed phone number uniqueness check to allow multiple users with same phone
@@ -54,7 +58,7 @@ const createUser = async (req, res) => {
       email: email.toLowerCase(),
       phone,
       password: hashedPassword,
-      role,
+      role: normalizedRole,
       otp,
       otp_expires_at: otpExpiresAt,
       is_verified: false,
@@ -194,10 +198,14 @@ const createToken = async (req, res) => {
   const { phone, role = "Creator", source = "admin" } = req.body;
 
   try {
+    // Normalize role before storing
+    const normalizedRole = normalizeRole(role);
+    console.log('CreateToken: Role normalized from', role, 'to', normalizedRole);
+
     const token = randomUUID();
     onboardingTokens[token] = {
       phone: phone || null,
-      role,
+      role: normalizedRole,
       source,
       expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       used: false,
