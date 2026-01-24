@@ -24,7 +24,9 @@ const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
 /* ---------------- DB ---------------- */
-connectMongoDB();
+connectMongoDB().catch(error => {
+  console.error('❌ Failed to connect to MongoDB:', error);
+});
 
 /* ------------- Middleware ------------ */
 app.use(helmet());
