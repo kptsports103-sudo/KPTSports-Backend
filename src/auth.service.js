@@ -46,7 +46,14 @@ const loginUser = async (email, password, role) => {
     }
     if (['superadmin', 'admin', 'creator'].includes(user.role)) {
       await generateOTPForUser(user, email);
-      return { message: 'OTP sent to your email' };
+      return { 
+        message: 'OTP sent to your email',
+        user: {
+          email: user.email,
+          role: user.role,
+          name: user.name
+        }
+      };
     } else {
       // Direct login for other roles like coach
       const token = jwt.sign(
