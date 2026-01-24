@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const onboardingTokens = {};
 const onboardingOTPs = {};
 
-module.exports.getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     // Get all users from MongoDB
     const users = await User.find({}).select('-password -otp -otp_expires_at');
@@ -573,12 +573,6 @@ const createUserOnboarding = async (req, res) => {
   }
 };
 
-const getUsers = async (req, res) => {
-return res.status(501).json({
-  message: 'getUsers not implemented yet',
-});
-};
-
 // Export all functions for CommonJS
 module.exports = {
   getUsers,
@@ -592,5 +586,6 @@ module.exports = {
   verifyOTPOnboarding,
   createUserOnboarding,
   verifyPhoneOTP,
-  verifyPhoneOTPWithLogin
+  verifyPhoneOTPWithLogin,
+  createAdminUser
 };
