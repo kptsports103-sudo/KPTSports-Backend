@@ -68,6 +68,10 @@ app.use(
 );
 
 /* ---------------- Health ------------- */
+// Suppress favicon 404s
+app.get('/favicon.ico', (_, res) => res.status(204).end());
+app.get('/favicon.png', (_, res) => res.status(204).end());
+
 app.get('/', (req, res) => {
   res.json({ message: 'KPT Sports Backend API running 🚀' });
 });
