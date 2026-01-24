@@ -23,21 +23,6 @@ const errorMiddleware = require('./middlewares/error.middleware');
 
 const app = express();
 
-// Database readiness state
-let dbReady = false;
-
-// Initialize database connection
-(async () => {
-  try {
-    await connectMongoDB();
-    dbReady = true;
-    console.log('✅ Database ready for requests');
-  } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
-    // Don't set dbReady = true, will keep returning 503
-  }
-})();
-
 /* ------------- Middleware ------------ */
 app.use(helmet());
 app.use(morgan('dev'));
@@ -64,7 +49,7 @@ app.get('/', (req, res) => {
 app.get('/healthz', (req, res) => {
   res.status(200).json({
     status: 'ok',
-    db: dbReady ? 'connected' : 'initializing'
+    db: 'checking'
   });
 });
 
@@ -73,16 +58,18 @@ app.get('/favicon.ico', (_, res) => res.status(204).end());
 app.get('/favicon.png', (_, res) => res.status(204).end());
 
 /* -------------- API Routes with DB Guard ----------- */
-// Database readiness guard ONLY for API routes
-app.use('/api', (req, res, next) => {
-  if (!dbReady) {
+// Database readiness guard - await connection for API routes
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectMongoDB(); // waits once, cached after
+    next();
+  } catch (err) {
     return res.status(503).json({
       error: 'SERVICE_UNAVAILABLE',
-      message: 'Database initializing, please retry shortly',
+      message: 'Database unavailable',
       retryAfter: 5
     });
   }
-  next();
 });
 
 app.use('/api/v1/auth', authRoutes);
