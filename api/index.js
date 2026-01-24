@@ -6,11 +6,14 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://kpt-sports.vercel.app'], // Your frontend URLs
+  origin: true, // Allow all origins for now
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Explicit preflight handling
+app.options('*', cors());
 
 app.use(cookieParser());
 
