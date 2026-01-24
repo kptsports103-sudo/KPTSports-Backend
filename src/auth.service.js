@@ -16,16 +16,21 @@ const loginUser = async (email, password, role) => {
     console.log('Password length:', password ? password.length : 'N/A');
     console.log('Password chars:', password ? password.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
     
-    let user = await User.findOne({ email: email.toLowerCase(), role: new RegExp('^' + role + '$', 'i') });
-    console.log('User found:', !!user);
-    if (user) {
-      console.log('User role from DB:', user.role);
-      console.log('User ID:', user._id);
-    }
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('Normalized email:', normalizedEmail);
+    
+    // Find user by email first (separate from role check)
+    let user = await User.findOne({ email: normalizedEmail });
+    console.log('User found by email:', !!user);
+    
     if (!user) {
-      console.log('ERROR: User not found with email and role combination');
+      console.log('ERROR: User not found with email:', normalizedEmail);
       throw new Error('User not found');
     }
+    
+    console.log('User found - Email:', user.email, 'Role:', user.role, 'ID:', user._id);
+    
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     console.log('Password match result:', isMatch);
@@ -33,7 +38,8 @@ const loginUser = async (email, password, role) => {
       console.log('ERROR: Password does not match');
       throw new Error('Invalid credentials');
     }
-    // Validate that user role matches requested role (case insensitive)
+    
+    // Validate role (case insensitive)
     if (user.role.toLowerCase() !== role.toLowerCase()) {
       console.log('ERROR: Role mismatch - DB role:', user.role, 'Requested role:', role);
       throw new Error(`Invalid role. User role is ${user.role}, but ${role} was requested.`);
