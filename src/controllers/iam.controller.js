@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const otpService = require('../services/otp.service');
+const { normalizeRole } = require('../utils/roleMapper');
 const emailService = require('../services/email.service');
 const smsService = require('../services/sms.service');
 const cloudinary = require('../config/cloudinary');
@@ -463,6 +464,10 @@ const createUserOnboarding = async (req, res) => {
       console.log('Direct onboarding, using role:', role);
     }
 
+    // Normalize role to valid enum values
+    const normalizedRole = normalizeRole(userRole);
+    console.log('Role normalized from', userRole, 'to', normalizedRole);
+
     // Validate mobile number format (Indian numbers starting with 6-9)
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(phone)) {
@@ -472,13 +477,13 @@ const createUserOnboarding = async (req, res) => {
     // Check if user already exists (same email + role combination)
     const existingUser = await User.findOne({
       email: email.toLowerCase(),
-      role: userRole
+      role: normalizedRole
     });
 
     if (existingUser) {
       console.log('User already exists with same email and role:', existingUser.email, existingUser.role);
       return res.status(400).json({
-        message: `An account with this email already exists for the role "${userRole}". Please use a different email or select a different role.`
+        message: `An account with this email already exists for the role "${normalizedRole}". Please use a different email or select a different role.`
       });
     }
 
@@ -523,9 +528,9 @@ const createUserOnboarding = async (req, res) => {
       email: email.toLowerCase(),
       phone,
       password: hashedPassword,
-      role: userRole,
+      role: normalizedRole,
       profileImage: profileImageUrl,
-      is_verified: !requiresPhoneVerification, // Verified for non-creator, unverified for creator
+      is_verified: false, // Unverified by default
       createdAt: new Date()
     });
 
