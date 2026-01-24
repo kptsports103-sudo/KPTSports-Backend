@@ -23,10 +23,20 @@ const errorMiddleware = require('./middlewares/error.middleware');
 
 const app = express();
 
-/* ---------------- DB ---------------- */
-connectMongoDB().catch(error => {
-  console.error('❌ Failed to connect to MongoDB:', error);
-});
+// Database readiness state
+let dbReady = false;
+
+// Initialize database connection
+(async () => {
+  try {
+    await connectMongoDB();
+    dbReady = true;
+    console.log('✅ Database ready for requests');
+  } catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+    // Don't set dbReady = true, will keep returning 503
+  }
+})();
 
 /* ------------- Middleware ------------ */
 app.use(helmet());
@@ -34,6 +44,18 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Database readiness guard middleware
+app.use((req, res, next) => {
+  if (!dbReady) {
+    return res.status(503).json({
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Database initializing, please retry shortly',
+      retryAfter: 5
+    });
+  }
+  next();
+});
 
 app.use(
   cors({
