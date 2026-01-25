@@ -1,4 +1,5 @@
 const { loginUser, verifyUserOTP } = require('../auth.service');
+const bcrypt = require('bcryptjs');
 const clerk = require('../config/clerk');
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
@@ -88,5 +89,47 @@ exports.clerkLogin = async (req, res) => {
   } catch (error) {
     console.error('Clerk login error:', error);
     res.status(400).json({ message: 'Invalid token' });
+  }
+};
+
+// Temporary admin registration
+exports.registerAdmin = async (req, res) => {
+  const { email, password, name, role } = req.body;
+  
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      clerkUserId: email,
+      profileImage: 'https://via.placeholder.com/80',
+      is_verified: true
+    });
+    
+    await user.save();
+    
+    res.status(201).json({ 
+      message: 'Admin user created successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error('Register admin error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
