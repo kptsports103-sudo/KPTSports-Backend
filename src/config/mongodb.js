@@ -17,7 +17,7 @@ const connectMongoDB = async () => {
   }
 
   if (!cached.promise) {
-    const mongoUri = process.env.MONGO_URI;
+    const mongoUri = process.env.MONGO_URI.replace(/\/$/, '') + '/test';
     
     if (!mongoUri) {
       throw new Error('MONGO_URI environment variable is required');
