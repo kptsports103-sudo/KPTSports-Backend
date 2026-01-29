@@ -82,7 +82,34 @@ const createUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(400).json({ message: error.message || 'Failed to create user' });
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      // Extract the duplicate field from the error message
+      const duplicateField = Object.keys(error.keyValue)[0];
+      const duplicateValue = error.keyValue[duplicateField];
+      
+      return res.status(409).json({ 
+        message: `User with this ${duplicateField} already exists`,
+        field: duplicateField,
+        value: duplicateValue
+      });
+    }
+    
+    // Handle other specific errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: validationErrors 
+      });
+    }
+    
+    // Generic error
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -582,7 +609,32 @@ const createUserOnboarding = async (req, res) => {
     });
   } catch (error) {
     console.error('Create user onboarding error:', error);
-    res.status(500).json({ message: error.message || 'Failed to create account' });
+
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      const duplicateField = Object.keys(error.keyValue)[0];
+      const duplicateValue = error.keyValue[duplicateField];
+
+      return res.status(409).json({
+        message: `User with this ${duplicateField} already exists`,
+        field: duplicateField,
+        value: duplicateValue
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+
+    res.status(500).json({
+      message: 'Failed to create account',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
