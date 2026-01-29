@@ -22,10 +22,15 @@ transporter.verify((error, success) => {
 
 const sendOTP = async (email, otp) => {
   try {
+    console.log(`Attempting to send OTP to ${email}`);
+    console.log(`Email user: ${process.env.EMAIL_USER}`);
+    console.log(`Email pass configured: ${process.env.EMAIL_PASS ? 'Yes' : 'No'}`);
+    
     const mailOptions = {
-      from: `"KPT Sports" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Your OTP Code - KPT Sports',
+      text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">KPT Sports - OTP Verification</h2>
@@ -39,11 +44,15 @@ const sendOTP = async (email, otp) => {
       `,
     };
     
-    await transporter.sendMail(mailOptions);
+    const result = await transporter.sendMail(mailOptions);
     console.log(`OTP sent successfully to ${email}`);
+    console.log('Message ID:', result.messageId);
+    return result;
   } catch (error) {
-    console.error('Error sending OTP:', error);
-    throw new Error('Failed to send OTP email');
+    console.error('Error sending OTP - Full error:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    throw new Error(`Failed to send OTP email: ${error.message}`);
   }
 };
 
