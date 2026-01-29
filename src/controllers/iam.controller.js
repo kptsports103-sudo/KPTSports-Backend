@@ -48,36 +48,27 @@ const createUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate OTP
-    const otp = otpService.generateOTP();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // Create new user (unverified)
+    // Create new user (verified by default - no SMS verification)
     const newUser = new User({
       name,
       email: email.toLowerCase(),
       phone,
       password: hashedPassword,
       role: normalizedRole,
-      otp,
-      otp_expires_at: otpExpiresAt,
-      is_verified: false,
+      is_verified: true, // Auto-verified since we're removing SMS
     });
 
     await newUser.save();
 
-    // Send OTP via SMS
-    await smsService.sendOTP(phone, otp);
-
     res.json({
-      message: 'User created successfully. OTP sent to mobile number for verification.',
+      message: 'User created successfully.',
       user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone,
         role: newUser.role,
-        is_verified: false,
+        is_verified: true,
       }
     });
   } catch (error) {
@@ -554,10 +545,7 @@ const createUserOnboarding = async (req, res) => {
       console.log('No profile image provided');
     }
 
-    // Require phone verification for all roles
-    const requiresPhoneVerification = true;
-
-    // Create new user
+    // Create new user (verified by default - no SMS verification)
     const newUser = new User({
       name,
       email: email.toLowerCase(),
@@ -565,24 +553,11 @@ const createUserOnboarding = async (req, res) => {
       password: hashedPassword,
       role: normalizedRole,
       profileImage: profileImageUrl,
-      is_verified: false, // Unverified by default
+      is_verified: true, // Auto-verified since we're removing SMS
       createdAt: new Date()
     });
 
-    // Generate OTP for phone verification if required
-    if (requiresPhoneVerification) {
-      const otp = otpService.generateOTP();
-      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      newUser.otp = otp;
-      newUser.otp_expires_at = otpExpiresAt;
-    }
-
     await newUser.save();
-
-    // Send OTP via SMS if required
-    if (requiresPhoneVerification) {
-      await smsService.sendOTP(phone, newUser.otp);
-    }
 
     // Mark token as used if it was provided
     if (token) {
@@ -593,9 +568,7 @@ const createUserOnboarding = async (req, res) => {
     }
 
     res.json({
-      message: requiresPhoneVerification
-        ? 'Account created successfully. Please verify your phone number with the OTP sent to your mobile.'
-        : 'Account created and verified successfully',
+      message: 'Account created successfully.',
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -603,9 +576,8 @@ const createUserOnboarding = async (req, res) => {
         phone: newUser.phone,
         role: newUser.role,
         profileImage: newUser.profileImage,
-        is_verified: newUser.is_verified
-      },
-      requiresPhoneVerification
+        is_verified: true
+      }
     });
   } catch (error) {
     console.error('Create user onboarding error:', error);
