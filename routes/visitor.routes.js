@@ -1,5 +1,5 @@
-import express from "express";
-import Visitor from "../models/visitor.model.js";
+const express = require("express");
+const Visitor = require("../models/visitor.model.js");
 
 const router = express.Router();
 
@@ -112,4 +112,4 @@ router.get("/daily-total", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
