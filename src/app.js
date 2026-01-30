@@ -18,6 +18,7 @@ const galleryRoutes = require('./routes/gallery.routes');
 const resultRoutes = require('./routes/result.routes');
 const groupResultRoutes = require('./routes/groupResult.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const visitorRoutes = require('../routes/visitor.routes');
 
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -90,6 +91,7 @@ app.use('/api/v1/galleries', galleryRoutes);
 app.use('/api/v1/results', resultRoutes);
 app.use('/api/v1/group-results', groupResultRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/visitor', visitorRoutes);
 
 /* -------------- Errors --------------- */
 app.use(errorMiddleware);
