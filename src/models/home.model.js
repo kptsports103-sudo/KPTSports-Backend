@@ -80,6 +80,16 @@ const homeSchema = new mongoose.Schema({
       type: String,
       default: ''
     }
+  }],
+  clubs: [{
+    name: {
+      type: String,
+      default: ''
+    },
+    url: {
+      type: String,
+      default: ''
+    }
   }]
 }, { timestamps: true });
 

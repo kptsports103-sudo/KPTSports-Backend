@@ -41,7 +41,7 @@ exports.getHome = async (req, res) => {
 
 exports.updateHome = async (req, res) => {
   try {
-    const { welcomeText, banners, highlights, about, history, bannerImages, boxes, bigHeader, bigText } = req.body;
+    const { welcomeText, banners, highlights, about, history, bannerImages, boxes, bigHeader, bigText, clubs } = req.body;
     console.log('Received update data:', req.body);
     let home = await Home.findOne();
     if (!home) {
@@ -77,6 +77,7 @@ exports.updateHome = async (req, res) => {
     if (boxes !== undefined) home.boxes = boxes;
     if (bigHeader !== undefined) home.bigHeader = bigHeader;
     if (bigText !== undefined) home.bigText = bigText;
+    if (clubs !== undefined) home.clubs = clubs;
     try {
       await home.save();
       console.log('Home updated successfully');
