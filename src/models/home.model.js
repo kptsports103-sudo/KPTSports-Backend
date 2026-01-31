@@ -89,6 +89,10 @@ const homeSchema = new mongoose.Schema({
     url: {
       type: String,
       default: ''
+    },
+    description: {
+      type: String,
+      default: ''
     }
   }]
 }, { timestamps: true });
