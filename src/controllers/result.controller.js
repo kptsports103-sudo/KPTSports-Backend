@@ -18,15 +18,17 @@ exports.getResults = async (req, res) => {
 
 exports.createResult = async (req, res) => {
   try {
-    const { name, event, year, medal, imageUrl } = req.body;
+    const { name, playerId, event, year, medal, imageUrl, diplomaYear } = req.body;
 
     const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
 
     const result = new Result({
       name,
+      playerId,
       event,
       year,
       medal,
+      diplomaYear,
       imageUrl: normalizedImageUrl,
     });
 

@@ -5,6 +5,9 @@ const playerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  playerId: {
+    type: String,
+  },
   branch: {
     type: String,
     required: true,

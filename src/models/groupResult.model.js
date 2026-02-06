@@ -17,6 +17,10 @@ const groupResultSchema = new mongoose.Schema({
     type: [String],
     required: true,
   },
+  memberIds: {
+    type: [String],
+    default: [],
+  },
   medal: {
     type: String,
     enum: ['Gold', 'Silver', 'Bronze'],

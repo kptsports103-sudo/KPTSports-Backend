@@ -5,6 +5,9 @@ const resultSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  playerId: {
+    type: String,
+  },
   event: {
     type: String,
     required: true,
@@ -17,6 +20,9 @@ const resultSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: ['Gold', 'Silver', 'Bronze'],
+  },
+  diplomaYear: {
+    type: String,
   },
   imageUrl: {
     type: String,

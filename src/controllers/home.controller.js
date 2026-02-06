@@ -142,7 +142,7 @@ exports.getStudentParticipation = async (req, res) => {
     const players = await Player.find({ year: targetYear }).sort({ createdAt: -1 });
 
     const students = players.map(p => ({
-      id: p._id,
+      id: p.playerId || String(p._id),
       name: p.name,
       branch: p.branch,
       diplomaYear: p.diplomaYear
@@ -164,7 +164,7 @@ exports.getPlayers = async (req, res) => {
     const grouped = players.reduce((acc, player) => {
       if (!acc[player.year]) acc[player.year] = [];
       acc[player.year].push({
-        id: player._id,
+        id: player.playerId || String(player._id),
         name: player.name,
         branch: player.branch,
         diplomaYear: player.diplomaYear
@@ -187,6 +187,7 @@ exports.savePlayers = async (req, res) => {
       for (const player of yearData.players) {
         await Player.create({
           name: player.name,
+          playerId: player.id || player.playerId,
           branch: player.branch,
           diplomaYear: player.diplomaYear,
           year: yearData.year,
