@@ -19,7 +19,7 @@ const groupResultSchema = new mongoose.Schema({
   },
   memberIds: {
     type: [String],
-    default: [],
+    required: true,
   },
   medal: {
     type: String,
