@@ -1,10 +1,15 @@
 const app = require('../src/app');
 
-const PORT = process.env.PORT || 3001;
+console.log('[DEBUG] api/index.js - Module loaded successfully');
+console.log('[DEBUG] app type:', typeof app);
+console.log('[DEBUG] Is app a function?', typeof app === 'function');
 
-app.listen(PORT, () => {
-  console.log(`🚀 KPT Sports Backend running on port ${PORT}`);
-  console.log(`📡 API available at: http://localhost:${PORT}/api/v1`);
-});
+// NOTE: app.listen() is REMOVED for Vercel serverless compatibility
+// Vercel serverless functions export the Express app directly
+// The previous app.listen() would BLOCK Vercel's serverless execution
+// because there's no persistent HTTP server in serverless environments
 
+// For local development, use: npm run dev
+
+// Export for Vercel serverless
 module.exports = app;
