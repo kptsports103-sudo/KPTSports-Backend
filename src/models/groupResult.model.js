@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const memberSchema = new mongoose.Schema({
   playerId: {
     type: String,
-    required: true
+    required: false
   },
   name: {
     type: String,
@@ -11,7 +11,7 @@ const memberSchema = new mongoose.Schema({
   },
   diplomaYear: {
     type: Number,
-    required: true,
+    required: false,
     min: 1,
     max: 3
   }
