@@ -11,6 +11,11 @@ const resultSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Optional display field
+  branch: {
+    type: String,
+    default: ''
+  },
   event: {
     type: String,
     required: true
