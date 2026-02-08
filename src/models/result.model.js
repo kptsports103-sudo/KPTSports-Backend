@@ -1,32 +1,35 @@
 const mongoose = require('mongoose');
 
 const resultSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
+  // REQUIRED - links to player (no more name-only)
   playerId: {
     type: String,
-    required: true,
+    required: true
+  },
+  // Denormalized for display (auto-filled from player)
+  name: {
+    type: String,
+    required: true
   },
   event: {
     type: String,
-    required: true,
+    required: true
   },
   year: {
     type: Number,
+    required: true
+  },
+  // REQUIRED - academic year at meet time
+  diplomaYear: {
+    type: Number,
     required: true,
+    min: 1,
+    max: 3
   },
   medal: {
     type: String,
     required: true,
     enum: ['Gold', 'Silver', 'Bronze'],
-  },
-  diplomaYear: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 3,
   },
   imageUrl: {
     type: String,
@@ -40,8 +43,13 @@ const resultSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  timestamps: true
 });
 
+// Indexes for fast lookups
+resultSchema.index({ playerId: 1 });
 resultSchema.index({ year: 1, order: 1 });
+resultSchema.index({ diplomaYear: 1 });
 
 module.exports = mongoose.model('Result', resultSchema);
