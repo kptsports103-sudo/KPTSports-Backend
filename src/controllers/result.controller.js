@@ -19,6 +19,9 @@ exports.getResults = async (req, res) => {
 exports.createResult = async (req, res) => {
   try {
     const { name, playerId, event, year, medal, imageUrl, diplomaYear } = req.body;
+    if (!playerId || !name || !event || !year || !medal || !diplomaYear) {
+      return res.status(400).json({ message: 'playerId, name, event, year, medal and diplomaYear are required.' });
+    }
 
     const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
 
@@ -36,6 +39,9 @@ exports.createResult = async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     console.error('Create result error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -61,6 +67,9 @@ exports.updateResult = async (req, res) => {
 
     res.json(result);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
