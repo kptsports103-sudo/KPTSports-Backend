@@ -2,6 +2,7 @@ const Home = require('../models/home.model');
 const Player = require('../models/player.model');
 const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
+const mongoose = require('mongoose');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -145,7 +146,7 @@ exports.getStudentParticipation = async (req, res) => {
       id: p.playerId || String(p._id),
       name: p.name,
       branch: p.branch,
-      diplomaYear: p.diplomaYear
+      diplomaYear: p.currentDiplomaYear || p.baseDiplomaYear || null
     }));
 
     res.json({
@@ -167,7 +168,7 @@ exports.getPlayers = async (req, res) => {
         id: player.playerId || String(player._id),
         name: player.name,
         branch: player.branch,
-        diplomaYear: player.diplomaYear
+        diplomaYear: player.currentDiplomaYear || player.baseDiplomaYear || null
       });
       return acc;
     }, {});
@@ -181,20 +182,50 @@ exports.getPlayers = async (req, res) => {
 exports.savePlayers = async (req, res) => {
   try {
     const { data } = req.body; // data is array of {year, players: []}
-    // Clear existing and save new
-    await Player.deleteMany({});
+    if (!Array.isArray(data)) {
+      return res.status(400).json({ message: 'Invalid payload. Expected data: [{ year, players: [] }].' });
+    }
+
+    const coachId = req.user?.id;
+    if (!coachId || !mongoose.Types.ObjectId.isValid(coachId)) {
+      return res.status(401).json({ message: 'Invalid authentication user.' });
+    }
+
+    // Build and validate docs before deleting current data.
+    const docs = [];
     for (const yearData of data) {
+      const year = Number(yearData?.year);
+      if (!year || !Array.isArray(yearData?.players)) continue;
+
       for (const player of yearData.players) {
-        await Player.create({
-          name: player.name,
-          playerId: player.id || player.playerId,
-          branch: player.branch,
-          diplomaYear: player.diplomaYear,
-          year: yearData.year,
-          coachId: req.user?.id || 'default' // assuming auth
+        const name = (player?.name || '').trim();
+        const branch = (player?.branch || '').trim();
+        if (!name || !branch) continue;
+
+        const parsedDiplomaYear = Number(player?.diplomaYear);
+        const safeDiplomaYear = [1, 2, 3].includes(parsedDiplomaYear) ? parsedDiplomaYear : 1;
+        const playerId = String(player?.id || player?.playerId || new mongoose.Types.ObjectId());
+
+        docs.push({
+          name,
+          playerId,
+          branch,
+          firstParticipationYear: year,
+          baseDiplomaYear: safeDiplomaYear,
+          currentDiplomaYear: safeDiplomaYear,
+          year,
+          coachId
         });
       }
     }
+
+    if (docs.length === 0) {
+      return res.status(400).json({ message: 'No valid players to save.' });
+    }
+
+    // Clear existing and save new set.
+    await Player.deleteMany({});
+    await Player.insertMany(docs);
     res.json({ message: 'Players saved successfully' });
   } catch (error) {
     console.error('Error saving players:', error);
