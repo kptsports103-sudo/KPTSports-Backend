@@ -18,16 +18,17 @@ exports.getResults = async (req, res) => {
 
 exports.createResult = async (req, res) => {
   try {
-    const { name, playerId, event, year, medal, imageUrl, diplomaYear } = req.body;
-    if (!playerId || !name || !event || !year || !medal || !diplomaYear) {
-      return res.status(400).json({ message: 'playerId, name, event, year, medal and diplomaYear are required.' });
+    const { name, playerId, branch, event, year, medal, imageUrl, diplomaYear } = req.body;
+    if (!name || !event || !year || !medal || !diplomaYear) {
+      return res.status(400).json({ message: 'name, event, year, medal and diplomaYear are required.' });
     }
 
     const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
 
     const result = new Result({
       name,
-      playerId,
+      playerId: playerId || '',
+      branch: branch || '',
       event,
       year,
       medal,

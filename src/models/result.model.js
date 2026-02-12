@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const resultSchema = new mongoose.Schema({
-  // REQUIRED - links to player (no more name-only)
+  // Optional link to player record; manual entries can be saved without playerId
   playerId: {
     type: String,
-    required: true
+    default: ''
   },
   // Denormalized for display (auto-filled from player)
   name: {
