@@ -9,6 +9,10 @@ const adminActivityLogSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  adminEmail: {
+    type: String,
+    default: ''
+  },
   role: {
     type: String,
     enum: ['superadmin', 'admin', 'creator', 'coach', 'student'],
