@@ -15,7 +15,15 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'User not found' });
     }
     
-    req.user = user;
+    // Keep original decoded data and merge with fetched user data
+    req.user = {
+      ...decoded,
+      _id: user._id.toString(), // Ensure _id is string for consistency
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage
+    };
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token is not valid' });
