@@ -42,13 +42,47 @@ exports.getHome = async (req, res) => {
 
 exports.updateHome = async (req, res) => {
   try {
-    const { welcomeText, banners, highlights, about, history, bannerImages, boxes, bigHeader, bigText, clubs } = req.body;
+    const { 
+      heroTitle, 
+      heroSubtitle, 
+      heroButtons, 
+      banners, 
+      achievements, 
+      sportsCategories, 
+      gallery, 
+      upcomingEvents, 
+      clubs, 
+      announcements,
+      welcomeText, 
+      highlights, 
+      about, 
+      history, 
+      bannerImages, 
+      boxes, 
+      bigHeader, 
+      bigText 
+    } = req.body;
+    
     console.log('Received update data:', req.body);
+    
     let home = await Home.findOne();
     if (!home) {
       home = new Home();
     }
-    // Update existing fields
+
+    // Update new CMS fields
+    if (heroTitle !== undefined) home.heroTitle = heroTitle;
+    if (heroSubtitle !== undefined) home.heroSubtitle = heroSubtitle;
+    if (heroButtons !== undefined) home.heroButtons = heroButtons;
+    if (banners !== undefined) home.banners = banners;
+    if (achievements !== undefined) home.achievements = achievements;
+    if (sportsCategories !== undefined) home.sportsCategories = sportsCategories;
+    if (gallery !== undefined) home.gallery = gallery;
+    if (upcomingEvents !== undefined) home.upcomingEvents = upcomingEvents;
+    if (clubs !== undefined) home.clubs = clubs;
+    if (announcements !== undefined) home.announcements = announcements;
+
+    // Update legacy fields
     if (welcomeText !== undefined) home.welcomeText = welcomeText;
     if (banners !== undefined) home.banners = banners;
     if (highlights !== undefined) {
@@ -78,7 +112,7 @@ exports.updateHome = async (req, res) => {
     if (boxes !== undefined) home.boxes = boxes;
     if (bigHeader !== undefined) home.bigHeader = bigHeader;
     if (bigText !== undefined) home.bigText = bigText;
-    if (clubs !== undefined) home.clubs = clubs;
+    
     try {
       await home.save();
       console.log('Home updated successfully');

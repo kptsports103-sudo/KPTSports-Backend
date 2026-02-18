@@ -1,20 +1,125 @@
 const mongoose = require('mongoose');
 
 const homeSchema = new mongoose.Schema({
-  welcomeText: {
+  // Hero Section
+  heroTitle: {
     type: String,
-    default: ''
+    default: 'Champions in Spirit, Champions in Action'
   },
+  heroSubtitle: {
+    type: String,
+    default: 'Karnataka Government Polytechnic, Mangaluru Sports Portal'
+  },
+  heroButtons: [{
+    text: {
+      type: String,
+      default: ''
+    },
+    link: {
+      type: String,
+      default: ''
+    }
+  }],
+  // Banners
   banners: [{
+    image: {
+      type: String,
+      default: ''
+    },
     video: {
       type: String,
       default: ''
     },
     year: {
-      type: Number,
-      default: 0
+      type: String,
+      default: ''
     }
   }],
+  // Achievements
+  achievements: [{
+    title: {
+      type: String,
+      default: ''
+    },
+    value: {
+      type: String,
+      default: ''
+    }
+  }],
+  // Sports Categories
+  sportsCategories: [{
+    name: {
+      type: String,
+      default: ''
+    },
+    image: {
+      type: String,
+      default: ''
+    }
+  }],
+  // Gallery
+  gallery: [{
+    image: {
+      type: String,
+      default: ''
+    },
+    caption: {
+      type: String,
+      default: ''
+    }
+  }],
+  // Upcoming Events
+  upcomingEvents: [{
+    name: {
+      type: String,
+      default: ''
+    },
+    date: {
+      type: String,
+      default: ''
+    },
+    venue: {
+      type: String,
+      default: ''
+    },
+    image: {
+      type: String,
+      default: ''
+    }
+  }],
+  // Clubs
+  clubs: [{
+    name: {
+      type: String,
+      default: ''
+    },
+    url: {
+      type: String,
+      default: ''
+    },
+    description: {
+      type: String,
+      default: ''
+    },
+    image: {
+      type: String,
+      default: ''
+    },
+    theme: {
+      type: String,
+      default: 'blue'
+    }
+  }],
+  // Announcements
+  announcements: [{
+    type: String,
+    default: ''
+  }],
+  // Legacy fields (kept for backward compatibility)
+  welcomeText: {
+    type: String,
+    default: ''
+  },
   highlights: [{
     title: {
       type: String,
@@ -77,20 +182,6 @@ const homeSchema = new mongoose.Schema({
       default: ''
     },
     venue: {
-      type: String,
-      default: ''
-    }
-  }],
-  clubs: [{
-    name: {
-      type: String,
-      default: ''
-    },
-    url: {
-      type: String,
-      default: ''
-    },
-    description: {
       type: String,
       default: ''
     }

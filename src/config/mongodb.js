@@ -28,7 +28,8 @@ const connectMongoDB = async () => {
       'NOT SET';
     console.log('[DEBUG] MONGO_URI (masked):', mongoUriMasked);
     
-    const mongoUri = mongoUriRaw.replace(/\/$/, '') + '/test';
+    // Clean the URI - remove trailing slash and any test suffix
+    const mongoUri = mongoUriRaw.replace(/\/+$/, '').replace(/\/test$/, '');
     
     if (!mongoUriRaw) {
       console.error('[DEBUG] ❌ MONGO_URI environment variable is required');
