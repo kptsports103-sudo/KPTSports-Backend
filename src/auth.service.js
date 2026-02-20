@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/user.model');
 const otpService = require('./services/otp.service');
 const emailService = require('./services/email.service');
-const { validateRole } = require('./auth.validation');
 
 const loginUser = async (email, password, role) => {
   const requestId = Math.random().toString(36).substr(2, 9);
@@ -39,8 +38,8 @@ const loginUser = async (email, password, role) => {
       throw new Error('Invalid credentials');
     }
     
-    // Validate role (case insensitive)
-    if (user.role.toLowerCase() !== role.toLowerCase()) {
+    // Validate role only if explicitly provided by the client.
+    if (role && user.role.toLowerCase() !== role.toLowerCase()) {
       console.log('ERROR: Role mismatch - DB role:', user.role, 'Requested role:', role);
       throw new Error(`Invalid role. User role is ${user.role}, but ${role} was requested.`);
     }
