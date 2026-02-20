@@ -15,6 +15,12 @@ const playerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Unique institutional player number
+  kpmNo: {
+    type: String,
+    default: '',
+    trim: true
+  },
   // Academic tracking
   firstParticipationYear: {
     type: Number,
@@ -31,6 +37,12 @@ const playerSchema = new mongoose.Schema({
     type: Number,
     min: 1,
     max: 3
+  },
+  // Semester at time of record save (1-6)
+  semester: {
+    type: String,
+    enum: ['1', '2', '3', '4', '5', '6'],
+    default: '1'
   },
   year: {
     type: Number,
@@ -51,6 +63,7 @@ const playerSchema = new mongoose.Schema({
 
 // Index for fast lookups
 playerSchema.index({ playerId: 1 });
+playerSchema.index({ kpmNo: 1 });
 playerSchema.index({ name: 1 });
 playerSchema.index({ firstParticipationYear: 1 });
 
