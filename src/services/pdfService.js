@@ -116,7 +116,7 @@ async function generatePDF(html, options = {}) {
     console.error("PDF Generation Error:", error);
     throw error;
   } finally {
-    if (page) await page.close();
+    if (page && !page.isClosed()) await page.close();
   }
 }
 
@@ -162,6 +162,18 @@ async function generateCertificatePDF(certificateData) {
 function buildCertificateHTML(data) {
   const { name, kpmNo, semester, department, competition, position, year, certificateId, qrImage, backgroundUrl } = data;
   const safeBackgroundUrl = resolveAbsoluteUrl(backgroundUrl);
+  const configuredFontUrl = String(process.env.CERTIFICATE_FONT_URL || "").trim();
+  const fontUrl = configuredFontUrl ? resolveAbsoluteUrl(configuredFontUrl) : "";
+  const fontFaceCss = fontUrl
+    ? `
+        @font-face {
+          font-family: "TimesNewRomanLocal";
+          src: url('${fontUrl}') format("truetype");
+          font-style: normal;
+          font-weight: 400 700;
+        }
+      `
+    : "";
 
   return `
     <!DOCTYPE html>
@@ -169,6 +181,8 @@ function buildCertificateHTML(data) {
     <head>
       <meta charset="UTF-8">
       <style>
+        ${fontFaceCss}
+
         * {
           margin: 0;
           padding: 0;
@@ -178,7 +192,7 @@ function buildCertificateHTML(data) {
         body {
           width: 1394px;
           height: 2048px;
-          font-family: "Times New Roman", serif;
+          font-family: ${fontUrl ? '"TimesNewRomanLocal", ' : ""}"Times New Roman", serif;
           overflow: hidden;
         }
         
@@ -199,60 +213,61 @@ function buildCertificateHTML(data) {
           align-items: flex-end;
           justify-content: center;
           line-height: 1;
+          padding-bottom: 6px;
         }
         
         .kpm {
-          left: 260px;
-          top: 830px;
+          left: 250px;
+          top: 820px;
           width: 380px;
           height: 50px;
           justify-content: flex-start;
         }
         
         .name {
-          left: 480px;
-          top: 1135px;
-          width: 750px;
-          height: 70px;
+          left: 470px;
+          top: 1115px;
+          width: 760px;
+          height: 80px;
           font-size: 52px;
         }
         
         .semester {
-          left: 520px;
-          top: 1280px;
+          left: 515px;
+          top: 1265px;
           width: 200px;
           height: 60px;
-          justify-content: flex-start;
+          justify-content: center;
         }
         
         .department {
-          left: 880px;
-          top: 1280px;
-          width: 320px;
+          left: 760px;
+          top: 1265px;
+          width: 360px;
           height: 60px;
-          justify-content: flex-start;
+          justify-content: center;
         }
         
         .competition {
-          left: 650px;
-          top: 1400px;
-          width: 420px;
+          left: 640px;
+          top: 1385px;
+          width: 460px;
           height: 60px;
-          justify-content: flex-start;
+          justify-content: center;
         }
         
         .year {
-          left: 1050px;
-          top: 1510px;
-          width: 160px;
+          left: 1020px;
+          top: 1500px;
+          width: 220px;
           height: 60px;
-          justify-content: flex-start;
+          justify-content: center;
         }
         
         .position {
-          left: 780px;
-          top: 1620px;
-          width: 320px;
+          left: 740px;
+          top: 1610px;
+          width: 360px;
           height: 60px;
         }
         
