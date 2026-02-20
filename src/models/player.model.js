@@ -7,6 +7,12 @@ const playerSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  // Permanent identity across years for the same student
+  masterId: {
+    type: String,
+    required: true,
+    trim: true
+  },
   name: {
     type: String,
     required: true
@@ -63,6 +69,7 @@ const playerSchema = new mongoose.Schema({
 
 // Index for fast lookups
 playerSchema.index({ playerId: 1 });
+playerSchema.index({ masterId: 1 });
 playerSchema.index({ kpmNo: 1 });
 playerSchema.index({ name: 1 });
 playerSchema.index({ firstParticipationYear: 1 });

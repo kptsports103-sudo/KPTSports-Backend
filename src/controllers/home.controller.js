@@ -178,6 +178,7 @@ exports.getStudentParticipation = async (req, res) => {
 
     const students = players.map(p => ({
       id: p.playerId || String(p._id),
+      masterId: p.masterId || '',
       name: p.name,
       branch: p.branch,
       diplomaYear: p.currentDiplomaYear || p.baseDiplomaYear || null,
@@ -202,6 +203,7 @@ exports.getPlayers = async (req, res) => {
       if (!acc[player.year]) acc[player.year] = [];
       acc[player.year].push({
         id: player.playerId || String(player._id),
+        masterId: player.masterId || '',
         name: player.name,
         branch: player.branch,
         diplomaYear: player.currentDiplomaYear || player.baseDiplomaYear || null,
@@ -245,11 +247,13 @@ exports.savePlayers = async (req, res) => {
         const parsedSemester = String(player?.semester || '1').trim();
         const safeSemester = ['1', '2', '3', '4', '5', '6'].includes(parsedSemester) ? parsedSemester : '1';
         const safeKpmNo = String(player?.kpmNo || '').trim();
+        const safeMasterId = String(player?.masterId || new mongoose.Types.ObjectId()).trim();
         const playerId = String(player?.id || player?.playerId || new mongoose.Types.ObjectId());
 
         docs.push({
           name,
           playerId,
+          masterId: safeMasterId,
           branch,
           kpmNo: safeKpmNo,
           firstParticipationYear: year,
