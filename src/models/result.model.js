@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
 
 const resultSchema = new mongoose.Schema({
+  // Canonical player identity across years
+  playerMasterId: {
+    type: String,
+    default: ''
+  },
   // Optional link to player record; manual entries can be saved without playerId
+  // Legacy per-year identity kept for backward compatibility.
   playerId: {
     type: String,
     default: ''
@@ -53,8 +59,12 @@ const resultSchema = new mongoose.Schema({
 });
 
 // Indexes for fast lookups
+resultSchema.index({ playerMasterId: 1 });
 resultSchema.index({ playerId: 1 });
 resultSchema.index({ year: 1, order: 1 });
 resultSchema.index({ diplomaYear: 1 });
+resultSchema.index({ playerMasterId: 1, year: 1 });
+resultSchema.index({ medal: 1 });
+resultSchema.index({ event: 1 });
 
 module.exports = mongoose.model('Result', resultSchema);

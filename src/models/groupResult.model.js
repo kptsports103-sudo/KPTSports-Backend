@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const memberSchema = new mongoose.Schema({
+  // Canonical player identity across years
+  playerMasterId: {
+    type: String,
+    required: false
+  },
+  // Legacy per-year identity kept for backward compatibility.
   playerId: {
     type: String,
     required: false
@@ -45,6 +51,11 @@ const groupResultSchema = new mongoose.Schema({
   memberIds: {
     type: [String]
   },
+  // Canonical member identities
+  memberMasterIds: {
+    type: [String],
+    default: []
+  },
   medal: {
     type: String,
     required: true,
@@ -59,7 +70,9 @@ const groupResultSchema = new mongoose.Schema({
 });
 
 // Indexes for fast lookups
+groupResultSchema.index({ 'members.playerMasterId': 1 });
 groupResultSchema.index({ 'members.playerId': 1 });
+groupResultSchema.index({ memberMasterIds: 1 });
 groupResultSchema.index({ year: 1 });
 groupResultSchema.index({ medal: 1 });
 

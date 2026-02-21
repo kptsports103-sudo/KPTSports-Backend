@@ -18,16 +18,29 @@ exports.getResults = async (req, res) => {
 
 exports.createResult = async (req, res) => {
   try {
-    const { name, playerId, branch, event, year, medal, imageUrl, diplomaYear } = req.body;
+    const {
+      name,
+      playerMasterId,
+      playerId,
+      branch,
+      event,
+      year,
+      medal,
+      imageUrl,
+      diplomaYear
+    } = req.body;
     if (!name || !event || !year || !medal || !diplomaYear) {
       return res.status(400).json({ message: 'name, event, year, medal and diplomaYear are required.' });
     }
 
     const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
+    const normalizedMasterId = String(playerMasterId || '').trim();
+    const normalizedPlayerId = String(playerId || '').trim();
 
     const result = new Result({
       name,
-      playerId: playerId || '',
+      playerMasterId: normalizedMasterId || normalizedPlayerId || '',
+      playerId: normalizedPlayerId || '',
       branch: branch || '',
       event,
       year,
@@ -50,6 +63,15 @@ exports.createResult = async (req, res) => {
 exports.updateResult = async (req, res) => {
   try {
     const updateData = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(updateData, 'playerMasterId')) {
+      updateData.playerMasterId = String(updateData.playerMasterId || '').trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updateData, 'playerId')) {
+      updateData.playerId = String(updateData.playerId || '').trim();
+    }
+    if (!updateData.playerMasterId && updateData.playerId) {
+      updateData.playerMasterId = updateData.playerId;
+    }
     if (req.file) {
       updateData.imageUrl = `/uploads/results/${req.file.filename}`;
     } else if (updateData.imageUrl === '' || !updateData.imageUrl?.trim()) {

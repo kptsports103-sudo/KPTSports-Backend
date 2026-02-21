@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/', getHome);
 router.put('/', auth, roleMiddleware(['admin']), updateHome);
-router.post('/upload-banner', auth, uploadBanner);
+router.post('/upload-banner', auth, roleMiddleware(['creator']), uploadBanner);
 router.get('/about-timeline', getAboutTimeline);
 router.put('/about-timeline', auth, roleMiddleware(['admin']), updateAboutTimeline);
 router.get('/student-participation', (req, res, next) => {
@@ -15,6 +15,6 @@ router.get('/student-participation', (req, res, next) => {
   next();
 }, getStudentParticipation);
 router.get('/players', getPlayers);
-router.post('/players', auth, savePlayers);
+router.post('/players', auth, roleMiddleware(['creator']), savePlayers);
 
 module.exports = router;

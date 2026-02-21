@@ -22,7 +22,9 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'creator', 'coach', 'student'],
+    // Canonical roles: superadmin/admin/creator/viewer.
+    // coach/student retained only for legacy data compatibility.
+    enum: ['superadmin', 'admin', 'creator', 'viewer', 'coach', 'student'],
     required: true,
   },
   otp: {

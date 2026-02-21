@@ -4,8 +4,8 @@ const adminActivityLogController = require('../controllers/adminActivityLog.cont
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
-// Create activity log (can be called by any authenticated admin)
-router.post('/', authMiddleware, roleMiddleware(['admin']), adminActivityLogController.createActivityLog);
+// Create activity log (creator/admin/superadmin)
+router.post('/', authMiddleware, roleMiddleware(['creator']), adminActivityLogController.createActivityLog);
 
 // Get current admin's activity logs
 router.get('/my-logs', authMiddleware, adminActivityLogController.getMyActivityLogs);
@@ -16,7 +16,7 @@ router.get('/all', authMiddleware, roleMiddleware(['superadmin']), adminActivity
 // Get activity logs by admin ID (Super Admin only)
 router.get('/admin/:adminId', authMiddleware, roleMiddleware(['superadmin']), adminActivityLogController.getActivityLogsByAdmin);
 
-// Get activity logs by page (Admin and Super Admin)
-router.get('/page/:pageName', authMiddleware, roleMiddleware(['admin', 'superadmin']), adminActivityLogController.getActivityLogsByPage);
+// Get activity logs by page (creator/admin/superadmin)
+router.get('/page/:pageName', authMiddleware, roleMiddleware(['creator']), adminActivityLogController.getActivityLogsByPage);
 
 module.exports = router;
