@@ -23,9 +23,31 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
 
     const uploadPromises = req.files.map(file => {
       const base64 = file.buffer.toString('base64');
-      return cloudinary.uploader.upload(`data:${file.mimetype};base64,${base64}`, {
+      const isImage = file.mimetype.startsWith('image/');
+      const isVideo = file.mimetype.startsWith('video/');
+      const isPdf = file.mimetype === 'application/pdf';
+
+      const uploadOptions = {
         folder: 'media',
-      });
+      };
+
+      if (isVideo) {
+        uploadOptions.resource_type = 'video';
+        uploadOptions.quality = 'auto';
+        uploadOptions.fetch_format = 'auto';
+        uploadOptions.transformation = [{ width: 1280, crop: 'limit' }, { bitrate: '1m' }];
+      } else if (isImage) {
+        uploadOptions.resource_type = 'image';
+        uploadOptions.quality = 'auto';
+        uploadOptions.fetch_format = 'auto';
+        uploadOptions.transformation = [{ width: 2000, crop: 'limit' }];
+      } else if (isPdf) {
+        uploadOptions.resource_type = 'raw';
+      } else {
+        uploadOptions.resource_type = 'auto';
+      }
+
+      return cloudinary.uploader.upload(`data:${file.mimetype};base64,${base64}`, uploadOptions);
     });
 
     const results = await Promise.all(uploadPromises);
