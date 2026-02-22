@@ -15,17 +15,26 @@ const {
 } = require('../controllers/iam.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
+const { normalizeRole } = require('../utils/roles');
 
 const router = express.Router();
 
-// GET /api/iam/users - Get all users (superadmin only)
-router.get('/users', authMiddleware, roleMiddleware(['superadmin']), getUsers);
+const exactRoleMiddleware = (roles = []) => (req, res, next) => {
+  const userRole = normalizeRole(req.user?.role);
+  if (!userRole || !roles.includes(userRole)) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+  return next();
+};
+
+// GET /api/iam/users - Get all users (admin and creator only)
+router.get('/users', authMiddleware, exactRoleMiddleware(['admin', 'creator']), getUsers);
 
 // POST /api/iam/users - Create new user (superadmin only)
 router.post('/users', authMiddleware, roleMiddleware(['superadmin']), createUser);
 
-// DELETE /api/iam/users/:userId - Delete user (superadmin only)
-router.delete('/users/:userId', authMiddleware, roleMiddleware(['superadmin']), deleteUser);
+// DELETE /api/iam/users/:userId - Delete user (creator only)
+router.delete('/users/:userId', authMiddleware, exactRoleMiddleware(['creator']), deleteUser);
 
 // POST /api/iam/verify-otp - Verify OTP for user activation
 router.post('/verify-otp', authMiddleware, roleMiddleware(['superadmin']), verifyOTP);
