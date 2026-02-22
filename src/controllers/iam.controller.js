@@ -7,15 +7,51 @@ const smsService = require('../services/sms.service');
 const cloudinary = require('../config/cloudinary');
 const { randomUUID } = require('crypto');
 const jwt = require('jsonwebtoken');
+const { normalizeRole: normalizeAccessRole } = require('../utils/roles');
 
 // In-memory token store for onboarding (in production, use database)
 const onboardingTokens = {};
 const onboardingOTPs = {};
 
+const ROLES = {
+  SUPERADMIN: 'superadmin',
+  ADMIN: 'admin',
+  CREATOR: 'creator',
+};
+
+const canDeleteUser = (currentUser, targetUser) => {
+  const currentRole = normalizeAccessRole(currentUser?.role);
+  const targetRole = normalizeAccessRole(targetUser?.role);
+
+  // Superadmin can delete admin/creator/viewer, but never superadmin.
+  if (currentRole === ROLES.SUPERADMIN) {
+    return targetRole !== ROLES.SUPERADMIN;
+  }
+
+  // Admin can delete only creator.
+  if (currentRole === ROLES.ADMIN) {
+    return targetRole === ROLES.CREATOR;
+  }
+
+  // Creator and others cannot delete.
+  return false;
+};
+
 const getUsers = async (req, res) => {
   try {
-    // Get all users from MongoDB
-    const users = await User.find({}).select('-password -otp -otp_expires_at');
+    const requesterRole = normalizeAccessRole(req.user?.role);
+    const requesterId = req.user?.id;
+    let query = {};
+
+    if (requesterRole === ROLES.ADMIN) {
+      query = { role: { $in: [ROLES.ADMIN, ROLES.CREATOR] } };
+    } else if (requesterRole === ROLES.CREATOR) {
+      query = requesterId ? { _id: requesterId } : { _id: null };
+    } else if (requesterRole !== ROLES.SUPERADMIN) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const users = await User.find(query).select('-password -otp -otp_expires_at');
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
@@ -192,12 +228,21 @@ const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
+    const requesterId = String(req.user?.id || '');
+    const requesterRole = normalizeAccessRole(req.user?.role);
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Allow deletion of all users for now
+    const targetId = String(user._id);
+    if (requesterId && requesterId === targetId) {
+      return res.status(403).json({ message: 'Self-deletion is not allowed' });
+    }
+
+    if (!canDeleteUser({ role: requesterRole }, user)) {
+      return res.status(403).json({ message: 'Permission denied' });
+    }
 
     await User.findByIdAndDelete(userId);
 
