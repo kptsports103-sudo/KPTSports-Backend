@@ -22,6 +22,25 @@ const parseSequence = (kpmNo) => {
 
 const isActive = (status) => toSafeString(status).toUpperCase() === 'ACTIVE';
 
+const normalizeSemester = (value) => {
+  const safe = toSafeString(value);
+  return ['1', '2', '3', '4', '5', '6'].includes(safe) ? safe : '1';
+};
+
+const normalizeDiplomaYear = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  return [1, 2, 3].includes(parsed) ? parsed : 1;
+};
+
+const normalizeStatus = (doc) => {
+  const safeStatus = toSafeString(doc.status).toUpperCase();
+  const status = ['ACTIVE', 'COMPLETED', 'DROPPED'].includes(safeStatus) ? safeStatus : 'ACTIVE';
+  if (String(doc.currentDiplomaYear) === '3' && String(doc.semester) === '6' && status === 'ACTIVE') {
+    return 'COMPLETED';
+  }
+  return status;
+};
+
 const isValidActiveKpmForDoc = (doc, usedSequences) => {
   const safeKpm = toSafeString(doc.kpmNo);
   const seq = parseSequence(safeKpm);
@@ -35,20 +54,70 @@ const isValidActiveKpmForDoc = (doc, usedSequences) => {
 };
 
 const assignGlobalKpms = (docs) => {
-  const working = (docs || []).map((doc) => ({ ...doc, kpmNo: toSafeString(doc.kpmNo) }));
-  const usedSequences = new Set();
+  const working = (docs || []).map((doc) => {
+    const safeDiplomaYear = normalizeDiplomaYear(doc.currentDiplomaYear || doc.baseDiplomaYear);
+    const safeSemester = normalizeSemester(doc.semester);
+    const normalized = {
+      ...doc,
+      currentDiplomaYear: safeDiplomaYear,
+      semester: safeSemester,
+      kpmNo: toSafeString(doc.kpmNo),
+      masterId: toSafeString(doc.masterId)
+    };
+    normalized.status = normalizeStatus(normalized);
+    return normalized;
+  });
 
-  working.forEach((doc) => {
-    if (!isActive(doc.status)) return;
+  const activeDocs = working.filter((doc) => isActive(doc.status));
+  const sortedForLifecycle = [...working].sort((a, b) => {
+    const yearA = Number.parseInt(a.year, 10) || 0;
+    const yearB = Number.parseInt(b.year, 10) || 0;
+    if (yearA !== yearB) return yearA - yearB;
+    return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+  });
 
-    if (isValidActiveKpmForDoc(doc, usedSequences)) {
-      usedSequences.add(parseSequence(doc.kpmNo));
+  // Lifecycle anchor: one stable sequence per masterId (when available in data).
+  const masterPreferredSeq = new Map();
+  sortedForLifecycle.forEach((doc) => {
+    if (!doc.masterId || masterPreferredSeq.has(doc.masterId)) return;
+    const seq = parseSequence(doc.kpmNo);
+    if (seq) {
+      masterPreferredSeq.set(doc.masterId, seq);
+    }
+  });
+
+  const sequenceOwner = new Map(); // seq -> masterId
+  const pendingAllocation = [];
+
+  activeDocs.forEach((doc) => {
+    const prefix = buildPrefix(doc.year, doc.currentDiplomaYear, doc.semester);
+    const ownSeq = parseSequence(doc.kpmNo);
+    const preferredSeq = doc.masterId ? masterPreferredSeq.get(doc.masterId) : null;
+    const candidateSeq = preferredSeq || ownSeq;
+
+    if (!candidateSeq) {
+      doc.kpmNo = '';
+      pendingAllocation.push(doc);
       return;
     }
 
-    doc.kpmNo = '';
+    const owner = sequenceOwner.get(candidateSeq);
+    if (owner && owner !== doc.masterId) {
+      doc.kpmNo = '';
+      pendingAllocation.push(doc);
+      return;
+    }
+
+    if (!owner) {
+      sequenceOwner.set(candidateSeq, doc.masterId || `__ROW__:${doc.playerId || Math.random()}`);
+    }
+    if (doc.masterId && !masterPreferredSeq.has(doc.masterId)) {
+      masterPreferredSeq.set(doc.masterId, candidateSeq);
+    }
+    doc.kpmNo = `${prefix}${toTwoDigits(candidateSeq)}`;
   });
 
+  const usedSequences = new Set(sequenceOwner.keys());
   const available = [];
   for (let i = MIN_SEQUENCE; i <= MAX_SEQUENCE; i++) {
     if (!usedSequences.has(i)) {
@@ -56,18 +125,33 @@ const assignGlobalKpms = (docs) => {
     }
   }
 
-  working.forEach((doc) => {
-    if (!isActive(doc.status)) return;
-    if (toSafeString(doc.kpmNo)) return;
+  pendingAllocation.forEach((doc) => {
+    const prefix = buildPrefix(doc.year, doc.currentDiplomaYear, doc.semester);
+    let seq = null;
 
-    const nextSequence = available.shift();
-    if (!nextSequence) {
-      throw new Error('Global KPM limit reached: all 99 active sequences are already assigned.');
+    if (doc.masterId && masterPreferredSeq.has(doc.masterId)) {
+      const preferred = masterPreferredSeq.get(doc.masterId);
+      const owner = sequenceOwner.get(preferred);
+      if (!owner || owner === doc.masterId) {
+        seq = preferred;
+      }
     }
 
-    const prefix = buildPrefix(doc.year, doc.currentDiplomaYear, doc.semester);
-    doc.kpmNo = `${prefix}${toTwoDigits(nextSequence)}`;
-    usedSequences.add(nextSequence);
+    if (!seq) {
+      seq = available.shift();
+      if (!seq) {
+        throw new Error('Global KPM limit reached: all 99 active sequences are already assigned.');
+      }
+      if (doc.masterId) {
+        masterPreferredSeq.set(doc.masterId, seq);
+      }
+    }
+
+    const currentOwner = sequenceOwner.get(seq);
+    if (!currentOwner) {
+      sequenceOwner.set(seq, doc.masterId || `__ROW__:${doc.playerId || Math.random()}`);
+    }
+    doc.kpmNo = `${prefix}${toTwoDigits(seq)}`;
   });
 
   return working;
