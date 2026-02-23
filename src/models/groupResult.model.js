@@ -20,6 +20,11 @@ const memberSchema = new mongoose.Schema({
     required: false,
     min: 1,
     max: 3
+  },
+  semester: {
+    type: String,
+    required: false,
+    enum: ['1', '2', '3', '4', '5', '6']
   }
 }, { _id: false });
 
