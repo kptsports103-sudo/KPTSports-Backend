@@ -1,5 +1,5 @@
 const express = require('express');
-const { getHome, updateHome, uploadBanner, getAboutTimeline, updateAboutTimeline, getStudentParticipation, getPlayers, savePlayers } = require('../controllers/home.controller');
+const { getHome, updateHome, uploadBanner, getAboutTimeline, updateAboutTimeline, getStudentParticipation, getPlayers, getKpmPoolStatus, savePlayers } = require('../controllers/home.controller');
 const auth = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
@@ -15,6 +15,7 @@ router.get('/student-participation', (req, res, next) => {
   next();
 }, getStudentParticipation);
 router.get('/players', getPlayers);
+router.get('/pool-status', auth, roleMiddleware(['creator', 'admin']), getKpmPoolStatus);
 router.post('/players', auth, roleMiddleware(['creator']), savePlayers);
 
 module.exports = router;

@@ -1,11 +1,30 @@
 const Home = require('../models/home.model');
 const Player = require('../models/player.model');
+const KpmPool = require('../models/kpmPool.model');
 const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const mongoose = require('mongoose');
+const { assignGlobalKpms, syncKpmPoolFromDocs } = require('../services/kpmSequence.service');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+const mapPlayersToGroupedResponse = (players) => {
+  return (players || []).reduce((acc, player) => {
+    if (!acc[player.year]) acc[player.year] = [];
+    acc[player.year].push({
+      id: player.playerId || String(player._id),
+      masterId: player.masterId || '',
+      name: player.name,
+      branch: player.branch,
+      diplomaYear: player.currentDiplomaYear || player.baseDiplomaYear || null,
+      semester: player.semester || '1',
+      status: player.status || 'ACTIVE',
+      kpmNo: player.kpmNo || ''
+    });
+    return acc;
+  }, {});
+};
 
 exports.uploadBanner = [
   upload.single('banner'),
@@ -200,24 +219,48 @@ exports.getStudentParticipation = async (req, res) => {
 exports.getPlayers = async (req, res) => {
   try {
     const players = await Player.find({}).sort({ year: -1, createdAt: -1 });
-    const grouped = players.reduce((acc, player) => {
-      if (!acc[player.year]) acc[player.year] = [];
-      acc[player.year].push({
-        id: player.playerId || String(player._id),
-        masterId: player.masterId || '',
-        name: player.name,
-        branch: player.branch,
-        diplomaYear: player.currentDiplomaYear || player.baseDiplomaYear || null,
-        semester: player.semester || '1',
-        status: player.status || 'ACTIVE',
-        kpmNo: player.kpmNo || ''
-      });
-      return acc;
-    }, {});
+    const grouped = mapPlayersToGroupedResponse(players);
     res.json(grouped);
   } catch (error) {
     console.error('Error fetching players:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getKpmPoolStatus = async (req, res) => {
+  try {
+    const TOTAL_CAPACITY = 99;
+    const pool = await KpmPool.findById('GLOBAL').lean();
+
+    let allocated = Array.isArray(pool?.allocated) ? pool.allocated.length : null;
+    let available = Array.isArray(pool?.available) ? pool.available.length : null;
+
+    // Fallback for legacy deployments where pool doc is missing.
+    if (allocated === null || available === null) {
+      const activePlayers = await Player.find({ status: 'ACTIVE' }, { kpmNo: 1 }).lean();
+      const used = new Set();
+      activePlayers.forEach((p) => {
+        const safeKpm = String(p?.kpmNo || '').trim();
+        if (safeKpm.length < 6) return;
+        const seq = Number.parseInt(safeKpm.slice(-2), 10);
+        if (!Number.isNaN(seq) && seq >= 1 && seq <= 99) {
+          used.add(seq);
+        }
+      });
+      allocated = used.size;
+      available = TOTAL_CAPACITY - allocated;
+    }
+
+    const usagePercent = Math.round((allocated / TOTAL_CAPACITY) * 100);
+    return res.json({
+      total: TOTAL_CAPACITY,
+      allocated,
+      available,
+      usagePercent
+    });
+  } catch (error) {
+    console.error('Error fetching KPM pool status:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -275,10 +318,20 @@ exports.savePlayers = async (req, res) => {
       return res.status(400).json({ message: 'No valid players to save.' });
     }
 
+    // Backend-owned enterprise KPM policy:
+    // - last 2 digits are globally unique across ACTIVE players
+    // - released automatically when status is COMPLETED/DROPPED (derived via availability)
+    const normalizedDocs = assignGlobalKpms(docs);
+
     // Clear existing and save new set.
     await Player.deleteMany({});
-    await Player.insertMany(docs);
-    res.json({ message: 'Players saved successfully' });
+    const savedPlayers = await Player.insertMany(normalizedDocs);
+    await syncKpmPoolFromDocs(normalizedDocs);
+
+    return res.json({
+      message: 'Players saved successfully',
+      players: mapPlayersToGroupedResponse(savedPlayers)
+    });
   } catch (error) {
     console.error('Error saving players:', error);
     res.status(500).json({ message: 'Server error' });
