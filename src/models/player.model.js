@@ -50,6 +50,12 @@ const playerSchema = new mongoose.Schema({
     enum: ['1', '2', '3', '4', '5', '6'],
     default: '1'
   },
+  // Lifecycle status: ACTIVE can hold KPM, COMPLETED/DROPPED can release KPM for reuse
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'COMPLETED', 'DROPPED'],
+    default: 'ACTIVE'
+  },
   year: {
     type: Number,
     required: true

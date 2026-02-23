@@ -183,6 +183,7 @@ exports.getStudentParticipation = async (req, res) => {
       branch: p.branch,
       diplomaYear: p.currentDiplomaYear || p.baseDiplomaYear || null,
       semester: p.semester || '1',
+      status: p.status || 'ACTIVE',
       kpmNo: p.kpmNo || ''
     }));
 
@@ -208,6 +209,7 @@ exports.getPlayers = async (req, res) => {
         branch: player.branch,
         diplomaYear: player.currentDiplomaYear || player.baseDiplomaYear || null,
         semester: player.semester || '1',
+        status: player.status || 'ACTIVE',
         kpmNo: player.kpmNo || ''
       });
       return acc;
@@ -246,6 +248,8 @@ exports.savePlayers = async (req, res) => {
         const safeDiplomaYear = [1, 2, 3].includes(parsedDiplomaYear) ? parsedDiplomaYear : 1;
         const parsedSemester = String(player?.semester || '1').trim();
         const safeSemester = ['1', '2', '3', '4', '5', '6'].includes(parsedSemester) ? parsedSemester : '1';
+        const parsedStatus = String(player?.status || 'ACTIVE').trim().toUpperCase();
+        const safeStatus = ['ACTIVE', 'COMPLETED', 'DROPPED'].includes(parsedStatus) ? parsedStatus : 'ACTIVE';
         const safeKpmNo = String(player?.kpmNo || '').trim();
         const safeMasterId = String(player?.masterId || new mongoose.Types.ObjectId()).trim();
         const playerId = String(player?.id || player?.playerId || new mongoose.Types.ObjectId());
@@ -260,6 +264,7 @@ exports.savePlayers = async (req, res) => {
           baseDiplomaYear: safeDiplomaYear,
           currentDiplomaYear: safeDiplomaYear,
           semester: safeSemester,
+          status: safeStatus,
           year,
           coachId
         });
