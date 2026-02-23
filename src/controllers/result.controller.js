@@ -1,4 +1,5 @@
 const Result = require('../models/result.model');
+const Player = require('../models/player.model');
 
 exports.getResults = async (req, res) => {
   try {
@@ -19,33 +20,40 @@ exports.getResults = async (req, res) => {
 exports.createResult = async (req, res) => {
   try {
     const {
-      name,
       playerMasterId,
-      playerId,
-      branch,
       event,
       year,
       medal,
-      imageUrl,
-      diplomaYear
+      imageUrl
     } = req.body;
-    if (!name || !event || !year || !medal || !diplomaYear) {
-      return res.status(400).json({ message: 'name, event, year, medal and diplomaYear are required.' });
+    const normalizedMasterId = String(playerMasterId || '').trim();
+    if (!normalizedMasterId || !event || !year || !medal) {
+      return res.status(400).json({ message: 'playerMasterId, event, year and medal are required.' });
+    }
+
+    const player = await Player.findOne({ masterId: normalizedMasterId })
+      .sort({ year: -1, updatedAt: -1, createdAt: -1 })
+      .lean();
+
+    if (!player) {
+      return res.status(400).json({ message: 'Selected player not found in players master data.' });
     }
 
     const normalizedImageUrl = req.file ? `/uploads/results/${req.file.filename}` : (imageUrl && imageUrl.trim() ? imageUrl : null);
-    const normalizedMasterId = String(playerMasterId || '').trim();
-    const normalizedPlayerId = String(playerId || '').trim();
+    const resolvedDiplomaYear = Number(player.currentDiplomaYear || player.baseDiplomaYear || player.diplomaYear || null);
+    if (![1, 2, 3].includes(resolvedDiplomaYear)) {
+      return res.status(400).json({ message: 'Selected player has invalid diploma year in master data.' });
+    }
 
     const result = new Result({
-      name,
-      playerMasterId: normalizedMasterId || normalizedPlayerId || '',
-      playerId: normalizedPlayerId || '',
-      branch: branch || '',
+      name: player.name || '',
+      playerMasterId: normalizedMasterId,
+      playerId: String(player.playerId || '').trim(),
+      branch: player.branch || '',
       event,
       year,
       medal,
-      diplomaYear,
+      diplomaYear: resolvedDiplomaYear,
       imageUrl: normalizedImageUrl,
     });
 
@@ -65,13 +73,27 @@ exports.updateResult = async (req, res) => {
     const updateData = { ...req.body };
     if (Object.prototype.hasOwnProperty.call(updateData, 'playerMasterId')) {
       updateData.playerMasterId = String(updateData.playerMasterId || '').trim();
+      if (!updateData.playerMasterId) {
+        return res.status(400).json({ message: 'playerMasterId is required.' });
+      }
+
+      const player = await Player.findOne({ masterId: updateData.playerMasterId })
+        .sort({ year: -1, updatedAt: -1, createdAt: -1 })
+        .lean();
+
+      if (!player) {
+        return res.status(400).json({ message: 'Selected player not found in players master data.' });
+      }
+
+      updateData.name = player.name || '';
+      updateData.branch = player.branch || '';
+      updateData.playerId = String(player.playerId || '').trim();
+      updateData.diplomaYear = Number(player.currentDiplomaYear || player.baseDiplomaYear || player.diplomaYear || null);
+      if (![1, 2, 3].includes(updateData.diplomaYear)) {
+        return res.status(400).json({ message: 'Selected player has invalid diploma year in master data.' });
+      }
     }
-    if (Object.prototype.hasOwnProperty.call(updateData, 'playerId')) {
-      updateData.playerId = String(updateData.playerId || '').trim();
-    }
-    if (!updateData.playerMasterId && updateData.playerId) {
-      updateData.playerMasterId = updateData.playerId;
-    }
+
     if (req.file) {
       updateData.imageUrl = `/uploads/results/${req.file.filename}`;
     } else if (updateData.imageUrl === '' || !updateData.imageUrl?.trim()) {
