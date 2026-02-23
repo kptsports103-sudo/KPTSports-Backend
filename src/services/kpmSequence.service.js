@@ -41,6 +41,8 @@ const normalizeStatus = (doc) => {
   return status;
 };
 
+const isKpmEligible = (status) => toSafeString(status).toUpperCase() !== 'DROPPED';
+
 const isValidActiveKpmForDoc = (doc, usedSequences) => {
   const safeKpm = toSafeString(doc.kpmNo);
   const seq = parseSequence(safeKpm);
@@ -69,6 +71,8 @@ const assignGlobalKpms = (docs) => {
   });
 
   const activeDocs = working.filter((doc) => isActive(doc.status));
+  const completedDocs = working.filter((doc) => doc.status === 'COMPLETED');
+  const droppedDocs = working.filter((doc) => !isKpmEligible(doc.status));
   const sortedForLifecycle = [...working].sort((a, b) => {
     const yearA = Number.parseInt(a.year, 10) || 0;
     const yearB = Number.parseInt(b.year, 10) || 0;
@@ -79,6 +83,7 @@ const assignGlobalKpms = (docs) => {
   // Lifecycle anchor: one stable sequence per masterId (when available in data).
   const masterPreferredSeq = new Map();
   sortedForLifecycle.forEach((doc) => {
+    if (!isKpmEligible(doc.status)) return;
     if (!doc.masterId || masterPreferredSeq.has(doc.masterId)) return;
     const seq = parseSequence(doc.kpmNo);
     if (seq) {
@@ -152,6 +157,39 @@ const assignGlobalKpms = (docs) => {
       sequenceOwner.set(seq, doc.masterId || `__ROW__:${doc.playerId || Math.random()}`);
     }
     doc.kpmNo = `${prefix}${toTwoDigits(seq)}`;
+  });
+
+  // Completed students should still carry a KPM for identity/history,
+  // but they do not reserve the global ACTIVE sequence pool.
+  const activeUsed = new Set(sequenceOwner.keys());
+  const availableForCompleted = [];
+  for (let i = MIN_SEQUENCE; i <= MAX_SEQUENCE; i++) {
+    if (!activeUsed.has(i)) {
+      availableForCompleted.push(i);
+    }
+  }
+
+  completedDocs.forEach((doc) => {
+    const prefix = buildPrefix(doc.year, doc.currentDiplomaYear, doc.semester);
+    const preferredSeq = doc.masterId ? masterPreferredSeq.get(doc.masterId) : null;
+    const ownSeq = parseSequence(doc.kpmNo);
+    let seq = preferredSeq || ownSeq || null;
+
+    if (!seq) {
+      seq = availableForCompleted.shift();
+      if (!seq) {
+        throw new Error('Global KPM limit reached: unable to assign KPM for completed players.');
+      }
+      if (doc.masterId) {
+        masterPreferredSeq.set(doc.masterId, seq);
+      }
+    }
+
+    doc.kpmNo = `${prefix}${toTwoDigits(seq)}`;
+  });
+
+  droppedDocs.forEach((doc) => {
+    doc.kpmNo = '';
   });
 
   return working;
