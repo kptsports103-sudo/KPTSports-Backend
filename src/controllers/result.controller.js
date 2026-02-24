@@ -27,7 +27,10 @@ exports.createResult = async (req, res) => {
       imageUrl
     } = req.body;
     const normalizedMasterId = String(playerMasterId || '').trim();
-    if (!normalizedMasterId || !event || !year || !medal) {
+    const normalizedEvent = String(event || '').trim();
+    const normalizedYear = Number(year);
+
+    if (!normalizedMasterId || !normalizedEvent || !normalizedYear || !medal) {
       return res.status(400).json({ message: 'playerMasterId, event, year and medal are required.' });
     }
 
@@ -45,13 +48,25 @@ exports.createResult = async (req, res) => {
       return res.status(400).json({ message: 'Selected player has invalid diploma year in master data.' });
     }
 
+    const existing = await Result.findOne({
+      playerMasterId: normalizedMasterId,
+      event: normalizedEvent,
+      year: normalizedYear
+    }).lean();
+
+    if (existing) {
+      return res.status(400).json({
+        message: 'Result already exists for this player in this event.'
+      });
+    }
+
     const result = new Result({
       name: player.name || '',
       playerMasterId: normalizedMasterId,
       playerId: String(player.playerId || '').trim(),
       branch: player.branch || '',
-      event,
-      year,
+      event: normalizedEvent,
+      year: normalizedYear,
       medal,
       diplomaYear: resolvedDiplomaYear,
       imageUrl: normalizedImageUrl,
@@ -64,6 +79,11 @@ exports.createResult = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
+    if (error?.code === 11000) {
+      return res.status(400).json({
+        message: 'Result already exists for this player in this event.'
+      });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -71,6 +91,15 @@ exports.createResult = async (req, res) => {
 exports.updateResult = async (req, res) => {
   try {
     const updateData = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(updateData, 'event')) {
+      updateData.event = String(updateData.event || '').trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updateData, 'year')) {
+      updateData.year = Number(updateData.year);
+      if (!updateData.year) {
+        return res.status(400).json({ message: 'year is required.' });
+      }
+    }
     if (Object.prototype.hasOwnProperty.call(updateData, 'playerMasterId')) {
       updateData.playerMasterId = String(updateData.playerMasterId || '').trim();
       if (!updateData.playerMasterId) {
@@ -94,6 +123,42 @@ exports.updateResult = async (req, res) => {
       }
     }
 
+    const current = await Result.findById(req.params.id).lean();
+    if (!current) {
+      return res.status(404).json({ message: 'Result not found' });
+    }
+
+    const finalMasterId = Object.prototype.hasOwnProperty.call(updateData, 'playerMasterId')
+      ? updateData.playerMasterId
+      : current.playerMasterId;
+    const finalEvent = Object.prototype.hasOwnProperty.call(updateData, 'event')
+      ? String(updateData.event || '').trim()
+      : String(current.event || '').trim();
+    const finalYear = Object.prototype.hasOwnProperty.call(updateData, 'year')
+      ? Number(updateData.year)
+      : Number(current.year);
+
+    if (!finalMasterId || !finalEvent || !finalYear) {
+      return res.status(400).json({ message: 'playerMasterId, event and year are required.' });
+    }
+
+    const duplicate = await Result.findOne({
+      _id: { $ne: req.params.id },
+      playerMasterId: finalMasterId,
+      event: finalEvent,
+      year: finalYear
+    }).lean();
+
+    if (duplicate) {
+      return res.status(400).json({
+        message: 'Result already exists for this player in this event.'
+      });
+    }
+
+    updateData.playerMasterId = finalMasterId;
+    updateData.event = finalEvent;
+    updateData.year = finalYear;
+
     if (req.file) {
       updateData.imageUrl = `/uploads/results/${req.file.filename}`;
     } else if (updateData.imageUrl === '' || !updateData.imageUrl?.trim()) {
@@ -101,7 +166,7 @@ exports.updateResult = async (req, res) => {
     }
 
     const result = await Result.findByIdAndUpdate(
-      req.params.id,
+      current._id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -114,6 +179,11 @@ exports.updateResult = async (req, res) => {
   } catch (error) {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
+    }
+    if (error?.code === 11000) {
+      return res.status(400).json({
+        message: 'Result already exists for this player in this event.'
+      });
     }
     res.status(500).json({ message: 'Server error' });
   }

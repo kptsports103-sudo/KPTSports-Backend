@@ -66,5 +66,9 @@ resultSchema.index({ diplomaYear: 1 });
 resultSchema.index({ playerMasterId: 1, year: 1 });
 resultSchema.index({ medal: 1 });
 resultSchema.index({ event: 1 });
+resultSchema.index(
+  { playerMasterId: 1, event: 1, year: 1 },
+  { unique: true, name: 'uq_result_player_event_year' }
+);
 
 module.exports = mongoose.model('Result', resultSchema);
