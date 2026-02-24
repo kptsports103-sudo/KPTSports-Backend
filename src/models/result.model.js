@@ -40,7 +40,7 @@ const resultSchema = new mongoose.Schema({
   medal: {
     type: String,
     required: true,
-    enum: ['Gold', 'Silver', 'Bronze'],
+    enum: ['Gold', 'Silver', 'Bronze', 'Participation'],
   },
   imageUrl: {
     type: String,
