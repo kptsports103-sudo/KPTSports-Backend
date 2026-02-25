@@ -18,10 +18,23 @@ const resolveIpAddress = (req) => {
   return req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
 };
 
+const normalizeChanges = (input) => {
+  if (!Array.isArray(input)) return [];
+  return input
+    .slice(0, 30)
+    .map((item) => {
+      const field = String(item?.field || '').trim();
+      const before = String(item?.before ?? '').slice(0, 300);
+      const after = String(item?.after ?? '').slice(0, 300);
+      return field ? { field, before, after } : null;
+    })
+    .filter(Boolean);
+};
+
 // Create a new activity log entry
 const createActivityLog = async (req, res) => {
   try {
-    const { action, pageName, details } = req.body;
+    const { action, pageName, details, changes } = req.body;
     
     // Get user info from token - support both id and _id
     const tokenUserId = req.user?.id || req.user?._id || req.user?._doc?.id || req.user?._doc?._id;
@@ -62,7 +75,8 @@ const createActivityLog = async (req, res) => {
       action,
       pageName,
       ipAddress: resolveIpAddress(req),
-      details: details || ''
+      details: details || '',
+      changes: normalizeChanges(changes)
     });
 
     await newLog.save();
