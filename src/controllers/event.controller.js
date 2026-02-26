@@ -20,6 +20,9 @@ exports.createEvent = async (req, res) => {
     level,
     gender,
     date,
+    eventTime,
+    registrationStartDate,
+    registrationEndDate,
     registrationStatus,
     event_title,
     event_level,
@@ -62,6 +65,9 @@ exports.createEvent = async (req, res) => {
       level: level || event_level,
       gender,
       date: date || event_date,
+      eventTime: eventTime || '',
+      registrationStartDate: registrationStartDate || '',
+      registrationEndDate: registrationEndDate || '',
       registrationStatus: registrationStatus || 'Open',
       event_title,
       event_level,
@@ -109,6 +115,16 @@ exports.updateEvent = async (req, res) => {
     if (payload.date || payload.event_date) {
       payload.date = payload.date || payload.event_date;
       payload.event_date = payload.event_date || payload.date;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payload, 'eventTime')) {
+      payload.eventTime = payload.eventTime || '';
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'registrationStartDate')) {
+      payload.registrationStartDate = payload.registrationStartDate || '';
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'registrationEndDate')) {
+      payload.registrationEndDate = payload.registrationEndDate || '';
     }
 
     if (payload.eventType !== 'Team') {

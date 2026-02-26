@@ -114,3 +114,53 @@ exports.createRegistration = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.updateRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registration = await Registration.findById(id);
+    if (!registration) return res.status(404).json({ error: 'Registration not found.' });
+
+    const teamHeadName = String(req.body.teamHeadName || registration.teamHeadName || '').trim();
+    const teamName = String(req.body.teamName || registration.teamName || '').trim();
+    const incomingMembers = Array.isArray(req.body.members) ? req.body.members : registration.members;
+
+    const cleanedMembers = incomingMembers.map((member) => ({
+      name: String(member?.name || '').trim(),
+      branch: String(member?.branch || '').trim(),
+      registerNumber: String(member?.registerNumber || '').trim(),
+      year: String(member?.year || '').trim(),
+      sem: String(member?.sem || '').trim(),
+    }));
+
+    if (!teamHeadName) return res.status(400).json({ error: 'Team head name is required.' });
+    if (!Array.isArray(cleanedMembers) || cleanedMembers.length === 0) {
+      return res.status(400).json({ error: 'Members are required.' });
+    }
+
+    for (let i = 0; i < cleanedMembers.length; i += 1) {
+      const row = cleanedMembers[i];
+      if (!row.name || !row.branch || !row.registerNumber || !row.year || !row.sem) {
+        return res.status(400).json({ error: `Row ${i + 1}: Fill all member fields.` });
+      }
+    }
+
+    const registerNumbers = cleanedMembers.map((member) => member.registerNumber.toLowerCase());
+    if (new Set(registerNumbers).size !== registerNumbers.length) {
+      return res.status(400).json({ error: 'Duplicate Register Number inside roster.' });
+    }
+
+    registration.teamHeadName = teamHeadName;
+    registration.teamName = teamName;
+    registration.members = cleanedMembers;
+    registration.year = String(req.body.year || cleanedMembers[0]?.year || registration.year || '').trim();
+    registration.sem = String(req.body.sem || cleanedMembers[0]?.sem || registration.sem || '').trim();
+    registration.status = 'Locked';
+
+    await registration.save();
+    res.json(registration);
+  } catch (error) {
+    console.error('Error updating registration:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

@@ -30,6 +30,18 @@ const eventSchema = new mongoose.Schema({
   date: {
     type: String,
   },
+  eventTime: {
+    type: String,
+    default: '',
+  },
+  registrationStartDate: {
+    type: String,
+    default: '',
+  },
+  registrationEndDate: {
+    type: String,
+    default: '',
+  },
   teamSizeMin: {
     type: Number,
     default: null,
