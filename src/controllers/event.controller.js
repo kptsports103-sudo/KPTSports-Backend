@@ -20,6 +20,7 @@ exports.createEvent = async (req, res) => {
     level,
     gender,
     date,
+    eventDate,
     eventTime,
     registrationStartDate,
     registrationEndDate,
@@ -64,10 +65,11 @@ exports.createEvent = async (req, res) => {
       teamSizeMax: maxTeamSize,
       level: level || event_level,
       gender,
-      date: date || event_date,
-      eventTime: eventTime || '',
-      registrationStartDate: registrationStartDate || '',
-      registrationEndDate: registrationEndDate || '',
+      date: date || eventDate || event_date,
+      eventDate: eventDate || date || event_date || 'TBA',
+      eventTime: eventTime || 'TBA',
+      registrationStartDate: registrationStartDate || 'TBA',
+      registrationEndDate: registrationEndDate || 'TBA',
       registrationStatus: registrationStatus || 'Open',
       event_title,
       event_level,
@@ -88,7 +90,7 @@ exports.createEvent = async (req, res) => {
     // Keep legacy fields in sync so old pages continue to work
     event.event_title = event.event_title || resolvedEventName;
     event.event_level = event.event_level || event.level || 'Open';
-    event.event_date = event.event_date || event.date || '';
+    event.event_date = event.event_date || event.eventDate || event.date || '';
 
     await event.save();
     res.status(201).json(event);
@@ -112,19 +114,21 @@ exports.updateEvent = async (req, res) => {
       payload.event_level = payload.event_level || payload.level;
     }
 
-    if (payload.date || payload.event_date) {
-      payload.date = payload.date || payload.event_date;
-      payload.event_date = payload.event_date || payload.date;
+    if (payload.date || payload.eventDate || payload.event_date) {
+      const resolvedDate = payload.eventDate || payload.date || payload.event_date;
+      payload.date = resolvedDate;
+      payload.eventDate = resolvedDate;
+      payload.event_date = resolvedDate;
     }
 
     if (Object.prototype.hasOwnProperty.call(payload, 'eventTime')) {
-      payload.eventTime = payload.eventTime || '';
+      payload.eventTime = payload.eventTime || 'TBA';
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'registrationStartDate')) {
-      payload.registrationStartDate = payload.registrationStartDate || '';
+      payload.registrationStartDate = payload.registrationStartDate || 'TBA';
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'registrationEndDate')) {
-      payload.registrationEndDate = payload.registrationEndDate || '';
+      payload.registrationEndDate = payload.registrationEndDate || 'TBA';
     }
 
     if (payload.eventType !== 'Team') {
