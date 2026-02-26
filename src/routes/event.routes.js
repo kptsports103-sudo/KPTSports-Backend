@@ -5,8 +5,8 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
 router.get('/', eventController.getEvents);
-router.post('/', authMiddleware, roleMiddleware(['admin']), eventController.createEvent);
-router.put('/:id', authMiddleware, roleMiddleware(['admin']), eventController.updateEvent);
-router.delete('/:id', authMiddleware, roleMiddleware(['admin']), eventController.deleteEvent);
+router.post('/', authMiddleware, roleMiddleware(['creator']), eventController.createEvent);
+router.put('/:id', authMiddleware, roleMiddleware(['creator']), eventController.updateEvent);
+router.delete('/:id', authMiddleware, roleMiddleware(['creator']), eventController.deleteEvent);
 
 module.exports = router;

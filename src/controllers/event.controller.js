@@ -11,6 +11,16 @@ exports.getEvents = async (req, res) => {
 
 exports.createEvent = async (req, res) => {
   const {
+    eventName,
+    category,
+    sportType,
+    eventType,
+    teamSizeMin,
+    teamSizeMax,
+    level,
+    gender,
+    date,
+    registrationStatus,
     event_title,
     event_level,
     event_date,
@@ -27,7 +37,32 @@ exports.createEvent = async (req, res) => {
     news_highlight
   } = req.body;
   try {
+    const resolvedEventName = String(eventName || event_title || '').trim();
+    if (!resolvedEventName) {
+      return res.status(400).json({ error: 'Event name is required' });
+    }
+
+    const resolvedEventType = eventType === 'Team' ? 'Team' : 'Individual';
+    const minTeamSize =
+      resolvedEventType === 'Team' && Number.isFinite(Number(teamSizeMin)) ? Number(teamSizeMin) : null;
+    const maxTeamSize =
+      resolvedEventType === 'Team' && Number.isFinite(Number(teamSizeMax)) ? Number(teamSizeMax) : null;
+
+    if (resolvedEventType === 'Team' && minTeamSize !== null && maxTeamSize !== null && minTeamSize > maxTeamSize) {
+      return res.status(400).json({ error: 'teamSizeMin cannot be greater than teamSizeMax' });
+    }
+
     const event = new Event({
+      eventName: resolvedEventName,
+      category,
+      sportType,
+      eventType: resolvedEventType,
+      teamSizeMin: minTeamSize,
+      teamSizeMax: maxTeamSize,
+      level: level || event_level,
+      gender,
+      date: date || event_date,
+      registrationStatus: registrationStatus || 'Open',
       event_title,
       event_level,
       event_date,
@@ -41,25 +76,59 @@ exports.createEvent = async (req, res) => {
       mens_champion_institution,
       womens_individual_champion,
       womens_champion_institution,
-      news_highlight
+      news_highlight,
     });
+
+    // Keep legacy fields in sync so old pages continue to work
+    event.event_title = event.event_title || resolvedEventName;
+    event.event_level = event.event_level || event.level || 'Open';
+    event.event_date = event.event_date || event.date || '';
+
     await event.save();
     res.status(201).json(event);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 };
 
 exports.updateEvent = async (req, res) => {
   const { id } = req.params;
   try {
-    const event = await Event.findByIdAndUpdate(id, req.body, { new: true });
+    const payload = { ...req.body };
+
+    if (payload.eventName || payload.event_title) {
+      payload.eventName = String(payload.eventName || payload.event_title || '').trim();
+      payload.event_title = payload.event_title || payload.eventName;
+    }
+
+    if (payload.level || payload.event_level) {
+      payload.level = payload.level || payload.event_level;
+      payload.event_level = payload.event_level || payload.level;
+    }
+
+    if (payload.date || payload.event_date) {
+      payload.date = payload.date || payload.event_date;
+      payload.event_date = payload.event_date || payload.date;
+    }
+
+    if (payload.eventType !== 'Team') {
+      payload.teamSizeMin = null;
+      payload.teamSizeMax = null;
+    } else if (
+      Number.isFinite(Number(payload.teamSizeMin)) &&
+      Number.isFinite(Number(payload.teamSizeMax)) &&
+      Number(payload.teamSizeMin) > Number(payload.teamSizeMax)
+    ) {
+      return res.status(400).json({ error: 'teamSizeMin cannot be greater than teamSizeMax' });
+    }
+
+    const event = await Event.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
     res.json(event);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 };
 
