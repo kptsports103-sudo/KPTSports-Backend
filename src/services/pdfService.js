@@ -208,6 +208,7 @@ function buildCertificateHTML(data) {
           position: absolute;
           color: #243a8c;
           font-weight: 700;
+          font-size: 34px;
           white-space: nowrap;
           display: flex;
           align-items: flex-end;
@@ -226,7 +227,7 @@ function buildCertificateHTML(data) {
         
         .name {
           left: 640px;
-          top: 1115px;
+          top: 1130px;
           width: 550px;
           height: 80px;
           font-size: 52px;
@@ -250,11 +251,11 @@ function buildCertificateHTML(data) {
         }
         
         .competition {
-          left: 640px;
+          left: 620px;
           top: 1385px;
-          width: 460px;
+          width: 360px;
           height: 60px;
-          justify-content: center;
+          justify-content: flex-start;
         }
         
         .year {
@@ -266,10 +267,11 @@ function buildCertificateHTML(data) {
         }
         
         .position {
-          left: 740px;
+          left: 720px;
           top: 1610px;
-          width: 360px;
+          width: 230px;
           height: 60px;
+          justify-content: flex-start;
         }
         
         .qr-code {
