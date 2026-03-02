@@ -242,7 +242,7 @@ function buildCertificateHTML(data) {
         }
         
         .department {
-          left: 760px;
+          left: 790px;
           top: 1265px;
           width: 360px;
           height: 60px;
@@ -258,8 +258,8 @@ function buildCertificateHTML(data) {
         }
         
         .year {
-          left: 1020px;
-          top: 1500px;
+          left: 1040px;
+          top: 1480px;
           width: 220px;
           height: 60px;
           justify-content: center;
