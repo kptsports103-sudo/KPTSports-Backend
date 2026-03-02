@@ -72,7 +72,6 @@ async function generatePDF(html, options = {}) {
   const {
     width = CERT_WIDTH,
     height = CERT_HEIGHT,
-    scale = 1,
   } = options;
 
   let page = null;
@@ -83,9 +82,9 @@ async function generatePDF(html, options = {}) {
 
     // Set viewport to match certificate size
     await page.setViewport({
-      width: Math.floor(width * scale),
-      height: Math.floor(height * scale),
-      deviceScaleFactor: scale,
+      width: Math.floor(width),
+      height: Math.floor(height),
+      deviceScaleFactor: 1,
     });
 
     // Set the HTML content
@@ -101,7 +100,7 @@ async function generatePDF(html, options = {}) {
     const pdfBuffer = await page.pdf({
       width: pxToIn(width),
       height: pxToIn(height),
-      scale: scale,
+      scale: 1,
       printBackground: true,
       margin: {
         top: 0,
@@ -162,6 +161,7 @@ async function generateCertificatePDF(certificateData) {
 function buildCertificateHTML(data) {
   const { name, kpmNo, semester, department, competition, position, year, certificateId, qrImage, backgroundUrl } = data;
   const safeBackgroundUrl = resolveAbsoluteUrl(backgroundUrl);
+  const slotDebug = String(process.env.CERTIFICATE_SLOT_DEBUG || "").toLowerCase() === "true";
   const configuredFontUrl = String(process.env.CERTIFICATE_FONT_URL || "").trim();
   const fontUrl = configuredFontUrl ? resolveAbsoluteUrl(configuredFontUrl) : "";
   const fontFaceCss = fontUrl
@@ -200,8 +200,10 @@ function buildCertificateHTML(data) {
           width: 1394px;
           height: 2048px;
           position: relative;
-          background: url('${safeBackgroundUrl}') no-repeat center center;
-          background-size: cover;
+          background-image: url('${safeBackgroundUrl}');
+          background-repeat: no-repeat;
+          background-position: 0 0;
+          background-size: 100% 100%;
         }
         
         .field {
@@ -211,10 +213,12 @@ function buildCertificateHTML(data) {
           font-size: 34px;
           white-space: nowrap;
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: center;
           line-height: 1;
-          padding-bottom: 6px;
+          padding-bottom: 0;
+          ${slotDebug ? "outline: 1px dashed rgba(255,0,0,.6);" : ""}
+          ${slotDebug ? "background: rgba(255,0,0,.06);" : ""}
         }
         
         .kpm {
