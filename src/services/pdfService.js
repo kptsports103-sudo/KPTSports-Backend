@@ -219,7 +219,7 @@ function buildCertificateHTML(data) {
         
         .kpm {
           left: 250px;
-          top: 820px;
+          top: 835px;
           width: 380px;
           height: 50px;
           font-size: 26px;
@@ -252,7 +252,7 @@ function buildCertificateHTML(data) {
         }
         
         .competition {
-          left: 655px;
+          left: 675px;
           top: 1370px;
           width: 360px;
           height: 60px;
@@ -269,7 +269,7 @@ function buildCertificateHTML(data) {
         }
         
         .position {
-          left: 750px;
+          left: 770px;
           top: 1595px;
           width: 230px;
           height: 60px;
