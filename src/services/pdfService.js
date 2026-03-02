@@ -225,11 +225,12 @@ function buildCertificateHTML(data) {
         }
         
         .name {
-          left: 470px;
+          left: 640px;
           top: 1115px;
-          width: 760px;
+          width: 550px;
           height: 80px;
           font-size: 52px;
+          justify-content: flex-start;
         }
         
         .semester {
