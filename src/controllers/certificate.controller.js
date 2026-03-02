@@ -41,6 +41,23 @@ const issueCertificate = async (req, res) => {
 
     const existing = await Certificate.findOne(lookup).lean();
     if (existing) {
+      const updates = {};
+      if (!toSafeString(existing.name) && payload.name) updates.name = payload.name;
+      if (!toSafeString(existing.kpmNo) && payload.kpmNo) updates.kpmNo = payload.kpmNo;
+      if (!toSafeString(existing.semester) && payload.semester) updates.semester = payload.semester;
+      if (!toSafeString(existing.department) && payload.department) updates.department = payload.department;
+      if (!toSafeString(existing.competition) && payload.competition) updates.competition = payload.competition;
+      if (!toSafeString(existing.position) && payload.position) updates.position = payload.position;
+      if (!toSafeString(existing.achievement) && payload.achievement) updates.achievement = payload.achievement;
+
+      if (Object.keys(updates).length > 0) {
+        const updated = await Certificate.findByIdAndUpdate(existing._id, { $set: updates }, { new: true }).lean();
+        return res.status(200).json({
+          created: false,
+          certificate: updated || existing,
+        });
+      }
+
       return res.status(200).json({
         created: false,
         certificate: existing,
