@@ -222,6 +222,7 @@ function buildCertificateHTML(data) {
           top: 820px;
           width: 380px;
           height: 50px;
+          font-size: 26px;
           justify-content: flex-start;
         }
         
@@ -251,10 +252,11 @@ function buildCertificateHTML(data) {
         }
         
         .competition {
-          left: 620px;
-          top: 1385px;
+          left: 640px;
+          top: 1370px;
           width: 360px;
           height: 60px;
+          font-size: 28px;
           justify-content: flex-start;
         }
         
@@ -267,8 +269,8 @@ function buildCertificateHTML(data) {
         }
         
         .position {
-          left: 720px;
-          top: 1610px;
+          left: 735px;
+          top: 1595px;
           width: 230px;
           height: 60px;
           justify-content: flex-start;
@@ -289,7 +291,7 @@ function buildCertificateHTML(data) {
     </head>
     <body>
       <div class="certificate">
-        <div class="field kpm">${escapeHtml(kpmNo)}</div>
+        <div class="field kpm">${escapeHtml([kpmNo, certificateId].filter(Boolean).join(" / "))}</div>
         <div class="field name">${escapeHtml(name)}</div>
         <div class="field semester">${escapeHtml(semester)}</div>
         <div class="field department">${escapeHtml(department)}</div>
