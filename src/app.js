@@ -23,6 +23,7 @@ const certificateRoutes = require('./routes/certificate.routes');
 const visitorRoutes = require('../routes/visitor.routes');
 const adminActivityLogRoutes = require('./routes/adminActivityLog.routes');
 const mediaRoutes = require('./routes/media.routes');
+const metricsRoutes = require('./routes/metrics.routes');
 
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -100,6 +101,7 @@ app.use('/api/v1/certificates', certificateRoutes);
 app.use('/api/visitor', visitorRoutes);
 app.use('/api/v1/admin-activity', adminActivityLogRoutes);
 app.use('/api/v1/media', mediaRoutes);
+app.use('/api/v1/metrics', metricsRoutes);
 
 /* -------------- Errors --------------- */
 app.use(errorMiddleware);
