@@ -1,85 +1,56 @@
 const AdminActivityLog = require('../models/adminActivityLog.model');
-const User = require('../models/user.model');
+const {
+  createActivityLogEntry,
+  resolvePageName,
+} = require('../services/activityLog.service');
 
-const ALLOWED_PAGE_ACTIONS = {
-  'Home Page': 'Updated Home Page Content',
-  'About Page': 'Updated About Page Content',
-  'History Page': 'Updated History Page Content',
-  'Events Page': 'Updated Events Page',
-  'Gallery Page': 'Updated Gallery',
-  'Results Page': 'Updated Match Results'
-};
+const buildSearchQuery = (search) => {
+  const value = String(search || '').trim();
+  if (!value) return null;
 
-const resolveIpAddress = (req) => {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.trim()) {
-    return forwarded.split(',')[0].trim();
-  }
-  return req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
-};
-
-const normalizeChanges = (input) => {
-  if (!Array.isArray(input)) return [];
-  return input
-    .slice(0, 30)
-    .map((item) => {
-      const field = String(item?.field || '').trim();
-      const before = String(item?.before ?? '').slice(0, 300);
-      const after = String(item?.after ?? '').slice(0, 300);
-      return field ? { field, before, after } : null;
-    })
-    .filter(Boolean);
+  return {
+    $or: [
+      { adminName: { $regex: value, $options: 'i' } },
+      { adminEmail: { $regex: value, $options: 'i' } },
+      { action: { $regex: value, $options: 'i' } },
+      { pageName: { $regex: value, $options: 'i' } },
+      { details: { $regex: value, $options: 'i' } },
+      { route: { $regex: value, $options: 'i' } },
+      { clientPath: { $regex: value, $options: 'i' } },
+    ],
+  };
 };
 
 // Create a new activity log entry
 const createActivityLog = async (req, res) => {
   try {
-    const { action, pageName, details, changes } = req.body;
-    
-    // Get user info from token - support both id and _id
-    const tokenUserId = req.user?.id || req.user?._id || req.user?._doc?.id || req.user?._doc?._id;
-    const tokenRole = req.user?.role || req.user?._doc?.role || 'admin';
-    const tokenEmail = req.user?.email || req.user?._doc?.email || '';
-    const tokenName = req.user?.name || req.user?._doc?.name || '';
-
-    if (!tokenUserId) {
-      // If no token user, use the details from request body
-      console.log('AdminActivityLog: No token user, using request body or default');
-    }
-
-    // Skip role check for now - allow all authenticated users
-    // The role will be taken from token or set to 'admin' as default
-    const finalRole = tokenRole || 'admin';
-
-    // Get user from database to get name and email
-    let adminName = tokenName || 'Unknown';
-    let adminEmail = tokenEmail || '';
-    
-    if (tokenUserId) {
-      try {
-        const user = await User.findById(tokenUserId).select('name email');
-        if (user) {
-          adminName = user.name || adminName;
-          adminEmail = user.email || adminEmail;
-        }
-      } catch (e) {
-        console.log('Could not fetch user:', e.message);
-      }
-    }
-
-    const newLog = new AdminActivityLog({
-      adminId: tokenUserId || 'unknown',
-      adminName,
-      adminEmail,
-      role: finalRole,
+    const {
       action,
       pageName,
-      ipAddress: resolveIpAddress(req),
-      details: details || '',
-      changes: normalizeChanges(changes)
-    });
+      details,
+      changes,
+      source,
+      method,
+      route,
+      clientPath,
+      statusCode,
+      metadata,
+    } = req.body || {};
 
-    await newLog.save();
+    const newLog = await createActivityLogEntry({
+      req,
+      user: req.user,
+      action,
+      pageName,
+      details,
+      changes,
+      source,
+      method,
+      route,
+      clientPath,
+      statusCode,
+      metadata,
+    });
 
     res.status(201).json({
       success: true,
@@ -101,15 +72,9 @@ const getActivityLogsByPage = async (req, res) => {
   try {
     const { pageName } = req.params;
     const limit = parseInt(req.query.limit, 10) || 20;
+    const resolvedPageName = resolvePageName({ pageName });
 
-    if (!Object.prototype.hasOwnProperty.call(ALLOWED_PAGE_ACTIONS, pageName)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid page name'
-      });
-    }
-
-    const logs = await AdminActivityLog.find({ pageName })
+    const logs = await AdminActivityLog.find({ pageName: resolvedPageName })
       .sort({ createdAt: -1 })
       .limit(limit);
 
@@ -177,7 +142,6 @@ const getAllActivityLogs = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
-    // Filter by date if provided
     let query = {};
     if (req.query.from && req.query.to) {
       query.createdAt = {
@@ -186,9 +150,29 @@ const getAllActivityLogs = async (req, res) => {
       };
     }
 
-    // Search by admin name
-    if (req.query.search) {
-      query.adminName = { $regex: req.query.search, $options: 'i' };
+    const searchQuery = buildSearchQuery(req.query.search);
+    if (searchQuery) {
+      query = { ...query, ...searchQuery };
+    }
+
+    if (req.query.role) {
+      query.role = String(req.query.role).trim().toLowerCase();
+    }
+
+    if (req.query.source) {
+      query.source = String(req.query.source).trim().toLowerCase();
+    }
+
+    if (req.query.pageName) {
+      query.pageName = resolvePageName({ pageName: req.query.pageName });
+    }
+
+    if (req.query.method) {
+      query.method = String(req.query.method).trim().toUpperCase();
+    }
+
+    if (req.query.action) {
+      query.action = { $regex: String(req.query.action).trim(), $options: 'i' };
     }
 
     const logs = await AdminActivityLog.find(query)

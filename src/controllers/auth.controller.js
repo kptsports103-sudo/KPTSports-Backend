@@ -3,6 +3,31 @@ const bcrypt = require('bcryptjs');
 const clerk = require('../config/clerk');
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
+const { createActivityLogEntry } = require('../services/activityLog.service');
+
+const logSuccessfulLogin = async (req, user, details = 'Successful login') => {
+  if (!user?.id && !user?._id) return;
+
+  try {
+    await createActivityLogEntry({
+      req,
+      user,
+      source: 'auth',
+      action: 'User Logged In',
+      pageName: 'Authentication',
+      details,
+      method: 'LOGIN',
+      route: '/api/v1/auth/login',
+      clientPath: req.headers['x-client-path'] || '/login',
+      statusCode: 200,
+      metadata: {
+        loginRole: user.role || '',
+      },
+    });
+  } catch (error) {
+    console.error('Failed to record login activity:', error.message);
+  }
+};
 
 exports.login = async (req, res) => {
   const { email, password, role } = req.body;
@@ -16,6 +41,9 @@ exports.login = async (req, res) => {
   try {
     const result = await loginUser(email, password, role);
     console.log('Login result:', result);
+    if (result?.token && result?.user) {
+      await logSuccessfulLogin(req, result.user, 'Successful direct login');
+    }
     res.json(result);
   } catch (error) {
     console.error('=== LOGIN ERROR ===');
@@ -36,6 +64,7 @@ exports.verifyOTP = async (req, res) => {
   try {
     const result = await verifyUserOTP(email, otp);
     console.log('Verify OTP result:', result);
+    await logSuccessfulLogin(req, result?.user, 'Successful OTP login');
     res.json(result);
   } catch (error) {
     console.error(error);
@@ -76,7 +105,7 @@ exports.clerkLogin = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    const authPayload = {
       token: jwtToken,
       user: {
         id: user._id,
@@ -85,7 +114,10 @@ exports.clerkLogin = async (req, res) => {
         name: user.name,
         profileImage: user.profileImage,
       },
-    });
+    };
+
+    await logSuccessfulLogin(req, authPayload.user, 'Successful Clerk login');
+    res.json(authPayload);
   } catch (error) {
     console.error('Clerk login error:', error);
     res.status(400).json({ message: 'Invalid token' });
