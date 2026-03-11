@@ -17,6 +17,7 @@ const ROLES = {
   SUPERADMIN: 'superadmin',
   ADMIN: 'admin',
   CREATOR: 'creator',
+  VIEWER: 'viewer',
 };
 
 const canDeleteUser = (currentUser, targetUser) => {
@@ -30,7 +31,7 @@ const canDeleteUser = (currentUser, targetUser) => {
 
   // Admin can delete only creator.
   if (currentRole === ROLES.ADMIN) {
-    return targetRole === ROLES.CREATOR;
+    return targetRole === ROLES.CREATOR || targetRole === ROLES.VIEWER;
   }
 
   // Creator and others cannot delete.
@@ -44,7 +45,7 @@ const getUsers = async (req, res) => {
     let query = {};
 
     if (requesterRole === ROLES.ADMIN) {
-      query = { role: { $in: [ROLES.ADMIN, ROLES.CREATOR] } };
+      query = { role: { $in: [ROLES.ADMIN, ROLES.CREATOR, ROLES.VIEWER] } };
     } else if (requesterRole === ROLES.CREATOR) {
       query = requesterId ? { _id: requesterId } : { _id: null };
     } else if (requesterRole !== ROLES.SUPERADMIN) {
@@ -57,6 +58,48 @@ const getUsers = async (req, res) => {
     console.error('Get users error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+const getRequesterRoleFromAuthHeader = (req) => {
+  const authHeader = String(req.headers?.authorization || '');
+  if (!authHeader.startsWith('Bearer ') || !process.env.JWT_SECRET) {
+    return null;
+  }
+
+  try {
+    const token = authHeader.slice(7).trim();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return normalizeAccessRole(decoded?.role);
+  } catch (error) {
+    console.warn('Unable to resolve requester role for IAM onboarding:', error.message);
+    return null;
+  }
+};
+
+const canCreateOnboardingRole = ({ requesterRole, targetRole, hasValidInvitationToken }) => {
+  if (hasValidInvitationToken) {
+    return [
+      ROLES.SUPERADMIN,
+      ROLES.ADMIN,
+      ROLES.CREATOR,
+      ROLES.VIEWER,
+    ].includes(targetRole);
+  }
+
+  if (requesterRole === ROLES.SUPERADMIN) {
+    return [
+      ROLES.SUPERADMIN,
+      ROLES.ADMIN,
+      ROLES.CREATOR,
+      ROLES.VIEWER,
+    ].includes(targetRole);
+  }
+
+  if (requesterRole === ROLES.ADMIN) {
+    return targetRole === ROLES.CREATOR || targetRole === ROLES.VIEWER;
+  }
+
+  return targetRole === ROLES.CREATOR || targetRole === ROLES.VIEWER;
 };
 
 const createUser = async (req, res) => {
@@ -519,6 +562,7 @@ const createUserOnboarding = async (req, res) => {
   try {
     // Check if token is provided (invitation-based) or direct onboarding
     let userRole = role; // Default to provided role
+    let hasValidInvitationToken = false;
 
     // Only validate token if it's provided and not empty
     if (token && typeof token === 'string' && token.trim() !== '') {
@@ -529,6 +573,7 @@ const createUserOnboarding = async (req, res) => {
         console.log('Token validation failed:', { exists: !!tokenData, used: tokenData?.used, expired: tokenData?.expires < Date.now() });
         return res.status(400).json({ message: 'Invalid or expired token' });
       }
+      hasValidInvitationToken = true;
       userRole = tokenData.role; // Use role from token
       console.log('Token validated, role:', userRole);
     } else {
@@ -538,6 +583,13 @@ const createUserOnboarding = async (req, res) => {
     // Normalize role to valid enum values
     const normalizedRole = normalizeRole(userRole);
     console.log('Role normalized from', userRole, 'to', normalizedRole);
+
+    const requesterRole = getRequesterRoleFromAuthHeader(req);
+    if (!canCreateOnboardingRole({ requesterRole, targetRole: normalizedRole, hasValidInvitationToken })) {
+      return res.status(403).json({
+        message: 'You do not have permission to create this role.'
+      });
+    }
 
     // Validate mobile number format (Indian numbers starting with 6-9)
     const phoneRegex = /^[6-9]\d{9}$/;
