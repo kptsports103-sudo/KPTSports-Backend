@@ -8,9 +8,23 @@
 
 const puppeteer = require("puppeteer");
 
-// Certificate dimensions
-const CERT_WIDTH = 1394;
-const CERT_HEIGHT = 2048;
+// Certificate dimensions - Using same template as frontend (1235x1600)
+const CERT_TEMPLATE = {
+  width: 1235,
+  height: 1600,
+  slots: {
+    kpm: { x: 110, y: 610, w: 260, h: 45, align: "left", fontSize: 26 },
+    name: { x: 617, y: 880, w: 490, h: 65, align: "center", fontSize: 52 },
+    semester: { x: 350, y: 960, w: 175, h: 55, align: "center", fontSize: 34 },
+    department: { x: 617, y: 960, w: 290, h: 55, align: "center", fontSize: 34 },
+    competition: { x: 615, y: 1050, w: 215, h: 55, align: "left", fontSize: 28 },
+    year: { x: 985, y: 1140, w: 155, h: 55, align: "center", fontSize: 34 },
+    position: { x: 617, y: 1200, w: 175, h: 55, align: "center", fontSize: 34 },
+  },
+};
+
+const CERT_WIDTH = CERT_TEMPLATE.width;
+const CERT_HEIGHT = CERT_TEMPLATE.height;
 const DEFAULT_FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 let browserInstance = null;
@@ -159,7 +173,7 @@ async function generateCertificatePDF(certificateData) {
  * Build certificate HTML
  */
 function buildCertificateHTML(data) {
-  const { name, kpmNo, semester, department, competition, position, year, certificateId, qrImage, backgroundUrl } = data;
+  const { name, kpmNo, semester, department, competition, position, year, qrImage, backgroundUrl } = data;
   const safeBackgroundUrl = resolveAbsoluteUrl(backgroundUrl);
   const slotDebug = String(process.env.CERTIFICATE_SLOT_DEBUG || "").toLowerCase() === "true";
   const configuredFontUrl = String(process.env.CERTIFICATE_FONT_URL || "").trim();
@@ -175,11 +189,25 @@ function buildCertificateHTML(data) {
       `
     : "";
 
+  const slots = CERT_TEMPLATE.slots;
+
+  const fieldCss = (slot) => `
+    left: ${slot.x}px;
+    top: ${slot.y}px;
+    width: ${slot.w}px;
+    height: ${slot.h}px;
+    font-size: ${slot.fontSize || 34}px;
+    justify-content: ${slot.align === "left" ? "flex-start" : "center"};
+    text-align: ${slot.align};
+    ${slotDebug ? "outline: 1px dashed rgba(255,0,0,.6);" : ""}
+    ${slotDebug ? "background: rgba(255,0,0,.06);" : ""}
+  `;
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <meta charset="UTF-8">
+      <meta charset="UTF-8" />
       <style>
         ${fontFaceCss}
 
@@ -188,101 +216,43 @@ function buildCertificateHTML(data) {
           padding: 0;
           box-sizing: border-box;
         }
-        
+
         body {
-          width: 1394px;
-          height: 2048px;
-          font-family: ${fontUrl ? '"TimesNewRomanLocal", ' : ""}"Times New Roman", serif;
+          width: ${CERT_WIDTH}px;
+          height: ${CERT_HEIGHT}px;
           overflow: hidden;
+          font-family: ${fontUrl ? '"TimesNewRomanLocal", ' : ""}"Times New Roman", serif;
         }
-        
+
         .certificate {
-          width: 1394px;
-          height: 2048px;
           position: relative;
+          width: ${CERT_WIDTH}px;
+          height: ${CERT_HEIGHT}px;
           background-image: url('${safeBackgroundUrl}');
           background-repeat: no-repeat;
           background-position: 0 0;
           background-size: 100% 100%;
         }
-        
+
         .field {
           position: absolute;
           color: #243a8c;
           font-weight: 700;
-          font-size: 34px;
           white-space: nowrap;
           display: flex;
           align-items: center;
-          justify-content: center;
           line-height: 1;
-          padding-bottom: 0;
-          ${slotDebug ? "outline: 1px dashed rgba(255,0,0,.6);" : ""}
-          ${slotDebug ? "background: rgba(255,0,0,.06);" : ""}
+          overflow: hidden;
         }
-        
-        .kpm {
-          left: 450px;
-          top: 835px;
-          width: 250px;
-          height: 50px;
-          font-size: 26px;
-          justify-content: flex-start;
-        }
-        
-        .name {
-          left: 697px;
-          top: 1080px;
-          width: 550px;
-          height: 80px;
-          font-size: 52px;
-          justify-content: center;
-          text-align: center;
-        }
-        
-        .semester {
-          left: 360px;
-          top: 1240px;
-          width: 120px;
-          height: 60px;
-          justify-content: center;
-        }
-        
-        .department {
-          left: 697px;
-          top: 1230px;
-          width: 360px;
-          height: 60px;
-          justify-content: center;
-          text-align: center;
-        }
-        
-        .competition {
-          left: 675px;
-          top: 1320px;
-          width: 360px;
-          height: 60px;
-          font-size: 28px;
-          justify-content: flex-start;
-        }
-        
-        .year {
-          left: 1040px;
-          top: 1430px;
-          width: 220px;
-          height: 60px;
-          justify-content: center;
-        }
-        
-        .position {
-          left: 697px;
-          top: 1530px;
-          width: 230px;
-          height: 60px;
-          justify-content: center;
-          text-align: center;
-        }
-        
+
+        .kpm { ${fieldCss(slots.kpm)} }
+        .name { ${fieldCss(slots.name)} }
+        .semester { ${fieldCss(slots.semester)} }
+        .department { ${fieldCss(slots.department)} }
+        .competition { ${fieldCss(slots.competition)} }
+        .year { ${fieldCss(slots.year)} }
+        .position { ${fieldCss(slots.position)} }
+
         .qr-code {
           position: absolute;
           bottom: 130px;
