@@ -4,19 +4,22 @@ const User = require('./models/user.model');
 const otpService = require('./services/otp.service');
 const emailService = require('./services/email.service');
 
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const normalizeOtp = (value) => String(value || '').replace(/\D/g, '').trim();
+
 const loginUser = async (email, password, role) => {
   const requestId = Math.random().toString(36).substr(2, 9);
   try {
     console.log('=== LOGIN ATTEMPT ===', requestId);
     console.log('Request ID:', requestId);
-    console.log('Email:', email.toLowerCase());
+    console.log('Email:', normalizeEmail(email));
     console.log('Requested role:', role);
     console.log('Password provided:', !!password);
     console.log('Password length:', password ? password.length : 'N/A');
     console.log('Password chars:', password ? password.split('').map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
     
     // Normalize email
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = normalizeEmail(email);
     console.log('Normalized email:', normalizedEmail);
     
     // Find user by email first (separate from role check)
@@ -44,11 +47,11 @@ const loginUser = async (email, password, role) => {
       throw new Error(`Invalid role. User role is ${user.role}, but ${role} was requested.`);
     }
     if (['superadmin', 'admin', 'creator'].includes(user.role)) {
-      await generateOTPForUser(user, email);
+      await generateOTPForUser(user, normalizedEmail);
       return { 
         message: 'OTP sent to your email',
         user: {
-          email: user.email,
+          email: normalizedEmail,
           role: user.role,
           name: user.name
         }
@@ -93,12 +96,21 @@ async function generateOTPForUser(user, email) {
 
 const verifyUserOTP = async (email, otp) => {
   try {
-    const user = await User.findOne({ email: email.toLowerCase(), otp });
-    if (!user || new Date(user.otp_expires_at) < new Date()) {
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedOtp = normalizeOtp(otp);
+
+    if (!normalizedEmail || normalizedOtp.length !== 6) {
+      throw new Error('Invalid or expired OTP');
+    }
+
+    const users = await User.find({ email: normalizedEmail });
+    const user = users.find((candidate) => String(candidate?.otp || '') === normalizedOtp);
+
+    if (!user || !user.otp_expires_at || new Date(user.otp_expires_at) < new Date()) {
       throw new Error('Invalid or expired OTP');
     }
     // Clear OTP
-    await User.findOneAndUpdate({ email: email.toLowerCase() }, { otp: null, otp_expires_at: null, is_verified: true });
+    await User.findByIdAndUpdate(user._id, { otp: null, otp_expires_at: null, is_verified: true });
     // Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
