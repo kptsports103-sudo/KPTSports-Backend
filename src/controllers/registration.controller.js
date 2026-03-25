@@ -121,6 +121,10 @@ exports.updateRegistration = async (req, res) => {
     const registration = await Registration.findById(id);
     if (!registration) return res.status(404).json({ error: 'Registration not found.' });
 
+    const requestedEventId = String(req.body.eventId || registration.eventId || '').trim();
+    const eventDoc = await Event.findById(requestedEventId);
+    if (!eventDoc) return res.status(404).json({ error: 'Event not found.' });
+
     const teamHeadName = String(req.body.teamHeadName || registration.teamHeadName || '').trim();
     const teamName = String(req.body.teamName || registration.teamName || '').trim();
     const incomingMembers = Array.isArray(req.body.members) ? req.body.members : registration.members;
@@ -150,8 +154,26 @@ exports.updateRegistration = async (req, res) => {
       return res.status(400).json({ error: 'Duplicate Register Number inside roster.' });
     }
 
+    const isTeamEvent = inferTeamEvent(eventDoc);
+    if (isTeamEvent) {
+      if (!teamName) {
+        return res.status(400).json({ error: 'Team name is required for team events.' });
+      }
+      const rules = getTeamSizeRules(eventDoc);
+      if (cleanedMembers.length < rules.min) {
+        return res.status(400).json({ error: `Minimum ${rules.min} players required.` });
+      }
+      if (cleanedMembers.length > rules.max) {
+        return res.status(400).json({ error: `Maximum ${rules.max} players allowed.` });
+      }
+    } else if (cleanedMembers.length !== 1) {
+      return res.status(400).json({ error: 'Individual event must have exactly 1 player.' });
+    }
+
+    registration.eventId = eventDoc._id;
+    registration.eventName = eventDoc.eventName || eventDoc.event_title;
     registration.teamHeadName = teamHeadName;
-    registration.teamName = teamName;
+    registration.teamName = isTeamEvent ? teamName : '';
     registration.members = cleanedMembers;
     registration.year = String(req.body.year || cleanedMembers[0]?.year || registration.year || '').trim();
     registration.sem = String(req.body.sem || cleanedMembers[0]?.sem || registration.sem || '').trim();
