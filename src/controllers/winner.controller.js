@@ -63,6 +63,16 @@ const getGroupLeadName = (groupResult) => {
   return String(firstNamedMember?.name || groupResult?.teamName || '').trim();
 };
 
+const serializeTeamMembers = (members) =>
+  (Array.isArray(members) ? members : [])
+    .map((member) => ({
+      name: String(member?.name || '').trim(),
+      branch: String(member?.branch || '').trim(),
+      diplomaYear: Number(member?.diplomaYear) || null,
+      semester: String(member?.semester || '').trim(),
+    }))
+    .filter((member) => member.name);
+
 const buildPlayerBranchLookup = async (groupResults) => {
   const masterIds = new Set();
   const playerIds = new Set();
@@ -213,6 +223,7 @@ const hydrateLinkedWinners = async (winners) => {
           branch: String(linkedResult.branch || winner.branch || '').trim(),
           year: Number(linkedResult.year) || winner.year || null,
           medal: String(linkedResult.medal || winner.medal || '').trim(),
+          teamMembers: [],
         };
       }
     }
@@ -228,11 +239,15 @@ const hydrateLinkedWinners = async (winners) => {
           branch: resolveGroupBranch(linkedResult, teamPlayerLookup) || String(winner.branch || '').trim(),
           year: Number(linkedResult.year) || winner.year || null,
           medal: String(linkedResult.medal || winner.medal || '').trim(),
+          teamMembers: serializeTeamMembers(linkedResult.members),
         };
       }
     }
 
-    return winner;
+    return {
+      ...winner,
+      teamMembers: [],
+    };
   });
 };
 
