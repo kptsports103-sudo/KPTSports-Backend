@@ -21,7 +21,7 @@ const eventSchema = new mongoose.Schema({
   },
   level: {
     type: String,
-    default: 'Open',
+    default: '',
   },
   gender: {
     type: String,
@@ -57,7 +57,7 @@ const eventSchema = new mongoose.Schema({
   registrationStatus: {
     type: String,
     enum: ['Open', 'Closed'],
-    default: 'Open',
+    default: 'Closed',
   },
 
   // Legacy fields kept for compatibility
@@ -67,6 +67,7 @@ const eventSchema = new mongoose.Schema({
   },
   event_level: {
     type: String,
+    default: '',
   },
   event_date: {
     type: String,

@@ -1,5 +1,6 @@
 const Event = require('../models/event.model');
 const Registration = require('../models/registration.model');
+const { deriveRegistrationStatus } = require('../utils/eventRegistration.util');
 
 const TEAM_EVENT_KEYWORDS = ['relay', 'cricket', 'kabaddi', 'volleyball', 'march past', 'marchpast'];
 
@@ -55,7 +56,7 @@ exports.createRegistration = async (req, res) => {
     const eventDoc = await Event.findById(eventId);
     if (!eventDoc) return res.status(404).json({ error: 'Event not found.' });
 
-    if (String(eventDoc.registrationStatus || 'Open') === 'Closed') {
+    if (deriveRegistrationStatus(eventDoc.registrationStartDate, eventDoc.registrationEndDate) === 'Closed') {
       return res.status(403).json({ error: 'Registration closed for this event.' });
     }
 
